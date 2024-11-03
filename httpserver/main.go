@@ -16,9 +16,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 const (
 	host     = "localhost"
 	port     = 5432
-	user     = "postgres"
+	user     = "admin"
 	password = "admin"
-	dbname   = "postgres"
+	dbname   = "HomeAssist"
 )
 
 func main() {
