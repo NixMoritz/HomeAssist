@@ -3,7 +3,7 @@ package main
 import (
 	"HomeAssist/database"
 	"HomeAssist/models"
-
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,6 +11,9 @@ import (
 
 	"github.com/gorilla/mux"
 )
+
+// Global variable to store the DB connection
+var db *sql.DB
 
 func putItem(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
@@ -26,6 +29,8 @@ func putItem(w http.ResponseWriter, r *http.Request) {
 
 	for _, item := range items {
 		fmt.Printf("Received item: %+v\n", item)
+		// Pass the initialized db instance to AddNewItem
+		database.AddNewItem(item, db)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -39,10 +44,21 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	database.SqlPing()
 }
 
 func main() {
+	var err error
+	db, err = database.InitDB()
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer db.Close()
+
+	// Run migrations using the initialized db instance
+	migrationsDir := "../SQL Migration" // Adjust this path as needed
+	database.Migration(db, migrationsDir)
+
+	// Initialize router
 	router := mux.NewRouter()
 	router.HandleFunc("/api/items", putItem).Methods("PUT")
 	router.HandleFunc("/api/items", getItem).Methods("GET")
