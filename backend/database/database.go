@@ -120,9 +120,9 @@ func AddNewItem(item models.Item, db *sql.DB) {
 		values = append(values, item.Units)
 		valuePlaceholders = append(valuePlaceholders, "$"+strconv.Itoa(len(values)))
 	}
-	if item.VendorID != 0 {
-		columns = append(columns, "VendorID")
-		values = append(values, item.VendorID)
+	if item.StoreBranch != "" {
+		columns = append(columns, "StoreBranch")
+		values = append(values, item.StoreBranch)
 		valuePlaceholders = append(valuePlaceholders, "$"+strconv.Itoa(len(values)))
 	}
 	if item.Weight != 0 {
