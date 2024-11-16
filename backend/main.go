@@ -46,6 +46,15 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func hc(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	database.Healthcheck(db)
+}
+
 func main() {
 	var err error
 	db, err = database.InitDB()
@@ -60,6 +69,7 @@ func main() {
 
 	// Initialize router
 	router := mux.NewRouter()
+	router.HandleFunc("/hc", hc).Methods("GET")
 	router.HandleFunc("/api/items", putItem).Methods("PUT")
 	router.HandleFunc("/api/items", getItem).Methods("GET")
 

@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -49,6 +47,13 @@ func InitDB() (*sql.DB, error) {
 
 	log.Println("Database connection successfully initialized")
 	return db, nil
+}
+func Healthcheck(db *sql.DB) {
+	err = db.Ping()
+	if err != nil {
+		log.Fatalf("Error connecting to the database: %v", err)
+	}
+	fmt.Println("Successfully connected!")
 }
 
 func SqlPing() {
@@ -133,45 +138,5 @@ func AddNewItem(item models.Item, db *sql.DB) {
 	_, err := db.Exec(insertSQL, values...)
 	if err != nil {
 		log.Fatalf("Error inserting new item: %v", err)
-	}
-}
-
-func Migration(db *sql.DB, migrationsDir string) {
-	// Read all files in the migrations directory
-	err := filepath.Walk(migrationsDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Check if the file is a regular file and ends with .sql
-		if !info.IsDir() && filepath.Ext(path) == ".sql" {
-			// Read the SQL file
-			sqlFile, err := os.ReadFile(path)
-			if err != nil {
-				log.Printf("Error reading SQL file %s: %v", path, err)
-				return err
-			}
-
-			// Split SQL commands if there are multiple statements
-			commands := strings.Split(string(sqlFile), ";")
-			for _, command := range commands {
-				// Trim spaces and check if the command is not empty
-				if trimmedCommand := strings.TrimSpace(command); trimmedCommand != "" {
-					// Execute the SQL statement
-					_, err := db.Exec(trimmedCommand)
-					if err != nil {
-						log.Printf("Error executing SQL command from file %s: %v", path, err)
-					} else {
-						// Log success
-						log.Printf("Successfully executed command from %s: %s", path, trimmedCommand)
-					}
-				}
-			}
-		}
-		return nil
-	})
-
-	if err != nil {
-		log.Fatalf("Error walking through migrations directory: %v", err)
 	}
 }
