@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -101,42 +99,41 @@ func SqlPing() {
 
 func AddNewItem(item models.Item, db *sql.DB) {
 
-	columns := []string{}
-	values := []interface{}{}
-	valuePlaceholders := []string{}
-
-	if item.ItemName != "" {
-		columns = append(columns, "ItemName")
-		values = append(values, item.ItemName)
-		valuePlaceholders = append(valuePlaceholders, "$"+strconv.Itoa(len(values)))
-	}
-	if item.UnitPrice != 0 {
-		columns = append(columns, "UnitPrice")
-		values = append(values, item.UnitPrice)
-		valuePlaceholders = append(valuePlaceholders, "$"+strconv.Itoa(len(values)))
-	}
-	if item.Units != 0 {
-		columns = append(columns, "Units")
-		values = append(values, item.Units)
-		valuePlaceholders = append(valuePlaceholders, "$"+strconv.Itoa(len(values)))
-	}
-	if item.StoreBranch != "" {
-		columns = append(columns, "StoreBranch")
-		values = append(values, item.StoreBranch)
-		valuePlaceholders = append(valuePlaceholders, "$"+strconv.Itoa(len(values)))
-	}
-	if item.Weight != 0 {
-		columns = append(columns, "Weight")
-		values = append(values, item.Weight)
-		valuePlaceholders = append(valuePlaceholders, "$"+strconv.Itoa(len(values)))
-	}
-
-	// Construct the final SQL statement
-	insertSQL := "INSERT INTO items (" + strings.Join(columns, ", ") + ") VALUES (" + strings.Join(valuePlaceholders, ", ") + ")"
-
 	// Execute the SQL statement with the collected values
-	_, err := db.Exec(insertSQL, values...)
+	_, err := db.Exec(
+		InsertItemQuery,
+		item.Item_Name,
+		item.Unit_Price,
+		item.Units,
+		item.Store_Branch,
+		item.Weight,
+	)
+
 	if err != nil {
 		log.Fatalf("Error inserting new item: %v", err)
 	}
+}
+
+func GetItem(itemID int, db *sql.DB) (*models.Item, error) {
+	var item models.Item
+
+	row := db.QueryRow(getItem, itemID)
+
+	err := row.Scan(
+		&item.Item_ID,
+		&item.Item_Name,
+		&item.Unit_Price,
+		&item.Units,
+		&item.Store_Branch,
+		&item.Weight,
+		&item.Updated_At,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("item with ID %d not found", itemID)
+		}
+		return nil, fmt.Errorf("error retrieving item: %w", err)
+	}
+
+	return &item, nil
 }

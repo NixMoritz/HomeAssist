@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -21,29 +23,39 @@ func putItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var items []models.Item
-	if err := json.NewDecoder(r.Body).Decode(&items); err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
+	var item models.Item
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		http.Error(w, "Bad request: invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
-	for _, item := range items {
-		fmt.Printf("Received item: %+v\n", item)
-		// Pass the initialized db instance to AddNewItem
-		database.AddNewItem(item, db)
-	}
+	fmt.Printf("Received item: %+v\n", item)
+	database.AddNewItem(item, db)
 
 	w.Header().Set("Content-Type", "application/json")
-	response := map[string]string{"message": "Items received successfully"}
+	response := map[string]string{"message": "Item received successfully"}
 	json.NewEncoder(w).Encode(response)
 }
 
 func getItem(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	itemID, err := strconv.Atoi(r.URL.Query().Get("item_id"))
+	if err != nil {
+		http.Error(w, "Invalid item ID", http.StatusBadRequest)
 		return
 	}
 
+	item, err := database.GetItem(itemID, db)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, err.Error(), http.StatusNotFound)
+		} else {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(item)
 }
 
 func hc(w http.ResponseWriter, r *http.Request) {
@@ -63,11 +75,9 @@ func main() {
 	}
 	defer db.Close()
 
-	// Run migrations using the initialized db instance
-	migrationsDir := "../SQL Migration" // Adjust this path as needed
+	migrationsDir := "../SQL Migration"
 	database.Migration(db, migrationsDir)
 
-	// Initialize router
 	router := mux.NewRouter()
 	router.HandleFunc("/hc", hc).Methods("GET")
 	router.HandleFunc("/api/items", putItem).Methods("PUT")
