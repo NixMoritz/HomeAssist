@@ -30,7 +30,7 @@ func Migration(db *sql.DB, migrationsDir string) {
 				// Trim spaces and check if the command is not empty
 				if trimmedCommand := strings.TrimSpace(command); trimmedCommand != "" {
 					// Execute the SQL statement
-					_, err := db.Exec(trimmedCommand)
+					// _, err := db.Exec(trimmedCommand)
 					if err != nil {
 						log.Printf("Error executing SQL command from file %s: %v", path, err)
 					} else {
