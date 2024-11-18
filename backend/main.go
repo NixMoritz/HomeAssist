@@ -151,6 +151,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/hc", hc).Methods("GET")
+
 	router.HandleFunc("/api/stores", putStore).Methods("PUT")
 	router.HandleFunc("/api/stores", getStore).Methods("GET")
 	router.HandleFunc("/api/stores/all", getAllStores).Methods("GET")
