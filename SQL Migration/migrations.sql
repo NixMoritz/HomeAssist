@@ -35,7 +35,7 @@ CREATE TABLE
     );
 
 CREATE TABLE
-    IF NOT EXISTS ReceiptItems (
+    IF NOT EXISTS Receipt_Items (
         Receipt_Item_ID SERIAL PRIMARY KEY, -- Unique identifier for each receipt-item entry
         Receipt_ID INT NOT NULL, -- Foreign key linking to the Receipts table
         Item_ID INT NOT NULL, -- Foreign key linking to the Items table
