@@ -356,3 +356,16 @@ func GetAllReceiptItems(db *sql.DB) ([]*models.ReceiptItem, error) {
 
 	return receiptItems, nil
 }
+
+func AddEinkauf(receiptEntry models.ReceiptEntry, db *sql.DB) {
+
+	fmt.Println(receiptEntry.Receipt)
+	for i := 0; i < len(receiptEntry.ReceiptItems); i++ {
+		fmt.Println(receiptEntry.ReceiptItems[i])
+	}
+
+	AddNewReceipt(receiptEntry.Receipt, db)
+	for i := 0; i < len(receiptEntry.ReceiptItems); i++ {
+		AddNewReceiptItem(receiptEntry.ReceiptItems[i], db)
+	}
+}

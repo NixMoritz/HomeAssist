@@ -16,7 +16,7 @@ const (
 	`
 
 	InsertReceiptItemQuery = `
-		INSERT INTO receipts_items (receipt_id, item_id, quantity, discount_amount, total_price)
+		INSERT INTO receipt_items (receipt_id, item_id, quantity, discount_amount, total_price)
 		VALUES ($1, $2, $3, $4, $5)
 	`
 

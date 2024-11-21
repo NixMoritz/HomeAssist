@@ -257,7 +257,26 @@ func hc(w http.ResponseWriter, r *http.Request) {
 		response := map[string]string{"message": "UnHealthy | can't connect!"}
 		json.NewEncoder(w).Encode(response)
 	}
+}
 
+func einkaufen(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var receiptEntry models.ReceiptEntry
+	if err := json.NewDecoder(r.Body).Decode(&receiptEntry); err != nil {
+		http.Error(w, "Bad request: invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Received receiptItem: %+v\n", receiptEntry)
+	database.AddEinkauf(receiptEntry, db)
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{"message": "ReceiptItem received successfully"}
+	json.NewEncoder(w).Encode(response)
 }
 
 func main() {
@@ -289,6 +308,8 @@ func main() {
 	router.HandleFunc("/api/receiptItem", putReceiptItem).Methods("PUT")
 	router.HandleFunc("/api/receiptItem", getReceiptItem).Methods("GET")
 	router.HandleFunc("/api/receiptItem/all", getAllReceiptItems).Methods("GET")
+
+	router.HandleFunc("/einkaufen", einkaufen).Methods("PUT")
 
 	log.Println("Server started on :8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
