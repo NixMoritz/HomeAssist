@@ -41,3 +41,8 @@ type ReceiptItem struct {
 	Discount_Amount float64 `json:"discount_amount"` // Discount amount applied to the item
 	Total_Price     float64 `json:"total_price"`     // Total price for the item (UnitPrice * Quantity)
 }
+
+type ReceiptEntry struct {
+	Receipt      Receipt       `json:"receipt"`
+	ReceiptItems []ReceiptItem `json:"receipt_items"`
+}

@@ -129,13 +129,135 @@ func getAllItems(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(items)
 }
 
+func putReceipt(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var receipt models.Receipt
+	if err := json.NewDecoder(r.Body).Decode(&receipt); err != nil {
+		http.Error(w, "Bad request: invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Received receipt: %+v\n", receipt)
+	database.AddNewReceipt(receipt, db)
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{"message": "Receipt received successfully"}
+	json.NewEncoder(w).Encode(response)
+}
+
+func getReceipt(w http.ResponseWriter, r *http.Request) {
+	receiptID, err := strconv.Atoi(r.URL.Query().Get("receipt_id"))
+	if err != nil {
+		http.Error(w, "Invalid receipt ID", http.StatusBadRequest)
+		return
+	}
+
+	receipt, err := database.GetReceipt(receiptID, db)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, err.Error(), http.StatusNotFound)
+		} else {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(receipt)
+}
+
+func getAllReceipts(w http.ResponseWriter, r *http.Request) {
+	receipts, err := database.GetAllReceipts(db)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, err.Error(), http.StatusNotFound)
+		} else {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(receipts)
+}
+
+func putReceiptItem(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var receiptItem models.ReceiptItem
+	if err := json.NewDecoder(r.Body).Decode(&receiptItem); err != nil {
+		http.Error(w, "Bad request: invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Received receiptItem: %+v\n", receiptItem)
+	database.AddNewReceiptItem(receiptItem, db)
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{"message": "ReceiptItem received successfully"}
+	json.NewEncoder(w).Encode(response)
+}
+
+func getReceiptItem(w http.ResponseWriter, r *http.Request) {
+	receiptItemID, err := strconv.Atoi(r.URL.Query().Get("receiptItem_id"))
+	if err != nil {
+		http.Error(w, "Invalid receiptItem ID", http.StatusBadRequest)
+		return
+	}
+
+	receiptItem, err := database.GetReceiptItem(receiptItemID, db)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, err.Error(), http.StatusNotFound)
+		} else {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(receiptItem)
+}
+
+func getAllReceiptItems(w http.ResponseWriter, r *http.Request) {
+	receiptItems, err := database.GetAllReceiptItems(db)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, err.Error(), http.StatusNotFound)
+		} else {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(receiptItems)
+}
+
 func hc(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	database.Healthcheck(db)
+	success := database.Healthcheck(db)
+
+	w.Header().Set("Content-Type", "application/json")
+	if success {
+		response := map[string]string{"message": "Healthy | Successfully connected!"}
+		json.NewEncoder(w).Encode(response)
+	} else {
+		response := map[string]string{"message": "UnHealthy | can't connect!"}
+		json.NewEncoder(w).Encode(response)
+	}
+
 }
 
 func main() {
@@ -159,6 +281,14 @@ func main() {
 	router.HandleFunc("/api/items", putItem).Methods("PUT")
 	router.HandleFunc("/api/items", getItem).Methods("GET")
 	router.HandleFunc("/api/items/all", getAllItems).Methods("GET")
+
+	router.HandleFunc("/api/receipt", putReceipt).Methods("PUT")
+	router.HandleFunc("/api/receipt", getReceipt).Methods("GET")
+	router.HandleFunc("/api/receipt/all", getAllReceipts).Methods("GET")
+
+	router.HandleFunc("/api/receiptItem", putReceiptItem).Methods("PUT")
+	router.HandleFunc("/api/receiptItem", getReceiptItem).Methods("GET")
+	router.HandleFunc("/api/receiptItem/all", getAllReceiptItems).Methods("GET")
 
 	log.Println("Server started on :8080")
 	log.Fatal(http.ListenAndServe(":8080", router))

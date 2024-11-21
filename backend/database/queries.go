@@ -11,13 +11,13 @@ const (
 	`
 
 	InsertReceiptQuery = `
-		INSERT INTO receipts (receipt_id, store_id, date_issued, total_amount, payment_method, total_discount_amount, net_amount, notes )
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO receipts (store_id, date_issued, total_amount, payment_method, total_discount_amount, net_amount, notes )
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
 	InsertReceiptItemQuery = `
-		INSERT INTO receipts_items (receipt_item_id, receipt_id, item_id, quantity, discount_amount, total_price)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO receipts_items (receipt_id, item_id, quantity, discount_amount, total_price)
+		VALUES ($1, $2, $3, $4, $5)
 	`
 
 	getItem = `
@@ -41,5 +41,18 @@ const (
 	getReceipt = `
 		SELECT * FROM receipts
 		WHERE receipt_id = $1
+		`
+
+	getAllReceipts = `
+		SELECT * FROM receipts
+		`
+
+	getReceiptItem = `
+		SELECT * FROM receipt_items
+		WHERE Receipt_Item_ID = $1
+		`
+
+	getAllReceiptItems = `
+		SELECT * FROM receipt_items
 		`
 )

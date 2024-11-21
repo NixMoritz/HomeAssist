@@ -46,17 +46,19 @@ func InitDB() (*sql.DB, error) {
 	log.Println("Database connection successfully initialized")
 	return db, nil
 }
-func Healthcheck(db *sql.DB) {
+
+func Healthcheck(db *sql.DB) bool {
 	err = db.Ping()
 	if err != nil {
 		log.Fatalf("Error connecting to the database: %v", err)
+		return false
 	}
 	fmt.Println("Successfully connected!")
+	return true
 }
 
 func AddNewStore(store models.Store, db *sql.DB) {
 
-	// Execute the SQL statement with the collected values
 	_, err := db.Exec(
 		InsertStoreQuery,
 		store.Unique_UID,
@@ -134,7 +136,6 @@ func GetAllStores(db *sql.DB) ([]*models.Store, error) {
 
 func AddNewItem(item models.Item, db *sql.DB) {
 
-	// Execute the SQL statement with the collected values
 	_, err := db.Exec(
 		InsertItemQuery,
 		item.Item_Name,
@@ -204,4 +205,154 @@ func GetAllItems(db *sql.DB) ([]*models.Item, error) {
 	}
 
 	return items, nil
+}
+
+func AddNewReceipt(receipt models.Receipt, db *sql.DB) {
+
+	_, err := db.Exec(
+		InsertReceiptQuery,
+		receipt.Store_ID,
+		receipt.Date_Issued,
+		receipt.Total_Amount,
+		receipt.Payment_Method,
+		receipt.Total_Discount_Amount,
+		receipt.Net_Amount,
+		receipt.Notes,
+	)
+
+	if err != nil {
+		log.Fatalf("Error inserting new receipt: %v", err)
+	}
+}
+
+func GetReceipt(receiptID int, db *sql.DB) (*models.Receipt, error) {
+	var receipt models.Receipt
+
+	row := db.QueryRow(getReceipt, receiptID)
+
+	err := row.Scan(
+		&receipt.Receipt_ID,
+		&receipt.Store_ID,
+		&receipt.Date_Issued,
+		&receipt.Total_Amount,
+		&receipt.Payment_Method,
+		&receipt.Total_Discount_Amount,
+		&receipt.Net_Amount,
+		&receipt.Notes,
+		&receipt.Updated_At,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("receipt with ID %d not found", receiptID)
+		}
+		return nil, fmt.Errorf("error retrieving receipt: %w", err)
+	}
+
+	return &receipt, nil
+}
+
+func GetAllReceipts(db *sql.DB) ([]*models.Receipt, error) {
+	var receipts []*models.Receipt
+
+	rows, err := db.Query(getAllReceipts)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving receipts: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var receipt models.Receipt
+		err := rows.Scan(
+			&receipt.Receipt_ID,
+			&receipt.Store_ID,
+			&receipt.Date_Issued,
+			&receipt.Total_Amount,
+			&receipt.Payment_Method,
+			&receipt.Total_Discount_Amount,
+			&receipt.Net_Amount,
+			&receipt.Notes,
+			&receipt.Updated_At,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning receipt: %w", err)
+		}
+		receipts = append(receipts, &receipt)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating through receipts: %w", err)
+	}
+
+	return receipts, nil
+}
+
+func AddNewReceiptItem(receiptItem models.ReceiptItem, db *sql.DB) {
+
+	_, err := db.Exec(
+		InsertReceiptItemQuery,
+		receiptItem.Receipt_ID,
+		receiptItem.Item_ID,
+		receiptItem.Quantity,
+		receiptItem.Discount_Amount,
+		receiptItem.Total_Price,
+	)
+
+	if err != nil {
+		log.Fatalf("Error inserting new receiptItem: %v", err)
+	}
+}
+
+func GetReceiptItem(receiptItemID int, db *sql.DB) (*models.ReceiptItem, error) {
+	var receiptItem models.ReceiptItem
+
+	row := db.QueryRow(getReceiptItem, receiptItemID)
+
+	err := row.Scan(
+		&receiptItem.Receipt_Item_ID,
+		&receiptItem.Receipt_ID,
+		&receiptItem.Item_ID,
+		&receiptItem.Quantity,
+		&receiptItem.Discount_Amount,
+		&receiptItem.Total_Price,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("receiptItem with ID %d not found", receiptItemID)
+		}
+		return nil, fmt.Errorf("error retrieving receiptItem: %w", err)
+	}
+
+	return &receiptItem, nil
+}
+
+func GetAllReceiptItems(db *sql.DB) ([]*models.ReceiptItem, error) {
+	var receiptItems []*models.ReceiptItem
+
+	rows, err := db.Query(getAllReceiptItems)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving receiptItems: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var receiptItem models.ReceiptItem
+		err := rows.Scan(
+			&receiptItem.Receipt_Item_ID,
+			&receiptItem.Receipt_ID,
+			&receiptItem.Item_ID,
+			&receiptItem.Quantity,
+			&receiptItem.Discount_Amount,
+			&receiptItem.Total_Price,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning receiptItem: %w", err)
+		}
+		receiptItems = append(receiptItems, &receiptItem)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating through receiptItems: %w", err)
+	}
+
+	return receiptItems, nil
 }
