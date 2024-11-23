@@ -1,6 +1,7 @@
 package main
 
 import (
+	"HomeAssist/internal/api/HomeAssist"
 	"HomeAssist/internal/models"
 	"HomeAssist/internal/storage/database"
 	"database/sql"
@@ -247,16 +248,7 @@ func hc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	success := database.Healthcheck(db)
-
-	w.Header().Set("Content-Type", "application/json")
-	if success {
-		response := map[string]string{"message": "Healthy | Successfully connected!"}
-		json.NewEncoder(w).Encode(response)
-	} else {
-		response := map[string]string{"message": "UnHealthy | can't connect!"}
-		json.NewEncoder(w).Encode(response)
-	}
+	HomeAssist.GetHC(w, db)
 }
 
 func einkaufen(w http.ResponseWriter, r *http.Request) {
