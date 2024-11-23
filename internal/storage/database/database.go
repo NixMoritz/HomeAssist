@@ -1,7 +1,8 @@
 package database
 
 import (
-	"HomeAssist/models"
+	"HomeAssist/internal/models"
+	queries "HomeAssist/internal/storage/HomeAssist"
 	"database/sql"
 	"fmt"
 	"log"
@@ -60,7 +61,7 @@ func Healthcheck(db *sql.DB) bool {
 func AddNewStore(store models.Store, db *sql.DB) {
 
 	_, err := db.Exec(
-		InsertStoreQuery,
+		queries.InsertStoreQuery,
 		store.Unique_UID,
 		store.Store_Branch,
 		store.Store_Name,
@@ -76,7 +77,7 @@ func AddNewStore(store models.Store, db *sql.DB) {
 func GetStore(storeID int, db *sql.DB) (*models.Store, error) {
 	var store models.Store
 
-	row := db.QueryRow(getStore, storeID)
+	row := db.QueryRow(queries.GetStore, storeID)
 
 	err := row.Scan(
 		&store.Store_ID,
@@ -100,7 +101,7 @@ func GetStore(storeID int, db *sql.DB) (*models.Store, error) {
 func GetAllStores(db *sql.DB) ([]*models.Store, error) {
 	var stores []*models.Store
 
-	rows, err := db.Query(getAllStores)
+	rows, err := db.Query(queries.GetAllStores)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving stores: %w", err)
 	}
@@ -137,7 +138,7 @@ func GetAllStores(db *sql.DB) ([]*models.Store, error) {
 func AddNewItem(item models.Item, db *sql.DB) {
 
 	_, err := db.Exec(
-		InsertItemQuery,
+		queries.InsertItemQuery,
 		item.Item_Name,
 		item.Unit_Price,
 		item.Units,
@@ -153,7 +154,7 @@ func AddNewItem(item models.Item, db *sql.DB) {
 func GetItem(itemID int, db *sql.DB) (*models.Item, error) {
 	var item models.Item
 
-	row := db.QueryRow(getItem, itemID)
+	row := db.QueryRow(queries.GetItem, itemID)
 
 	err := row.Scan(
 		&item.Item_ID,
@@ -177,7 +178,7 @@ func GetItem(itemID int, db *sql.DB) (*models.Item, error) {
 func GetAllItems(db *sql.DB) ([]*models.Item, error) {
 	var items []*models.Item
 
-	rows, err := db.Query(getAllItems)
+	rows, err := db.Query(queries.GetAllItems)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving items: %w", err)
 	}
@@ -210,7 +211,7 @@ func GetAllItems(db *sql.DB) ([]*models.Item, error) {
 func AddNewReceipt(receipt models.Receipt, db *sql.DB) {
 
 	_, err := db.Exec(
-		InsertReceiptQuery,
+		queries.InsertReceiptQuery,
 		receipt.Store_ID,
 		receipt.Date_Issued,
 		receipt.Total_Amount,
@@ -228,7 +229,7 @@ func AddNewReceipt(receipt models.Receipt, db *sql.DB) {
 func GetReceipt(receiptID int, db *sql.DB) (*models.Receipt, error) {
 	var receipt models.Receipt
 
-	row := db.QueryRow(getReceipt, receiptID)
+	row := db.QueryRow(queries.GetReceipt, receiptID)
 
 	err := row.Scan(
 		&receipt.Receipt_ID,
@@ -254,7 +255,7 @@ func GetReceipt(receiptID int, db *sql.DB) (*models.Receipt, error) {
 func GetAllReceipts(db *sql.DB) ([]*models.Receipt, error) {
 	var receipts []*models.Receipt
 
-	rows, err := db.Query(getAllReceipts)
+	rows, err := db.Query(queries.GetAllReceipts)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving receipts: %w", err)
 	}
@@ -289,7 +290,7 @@ func GetAllReceipts(db *sql.DB) ([]*models.Receipt, error) {
 func AddNewReceiptItem(receiptItem models.ReceiptItem, db *sql.DB) {
 
 	_, err := db.Exec(
-		InsertReceiptItemQuery,
+		queries.InsertReceiptItemQuery,
 		receiptItem.Receipt_ID,
 		receiptItem.Item_ID,
 		receiptItem.Quantity,
@@ -305,7 +306,7 @@ func AddNewReceiptItem(receiptItem models.ReceiptItem, db *sql.DB) {
 func GetReceiptItem(receiptItemID int, db *sql.DB) (*models.ReceiptItem, error) {
 	var receiptItem models.ReceiptItem
 
-	row := db.QueryRow(getReceiptItem, receiptItemID)
+	row := db.QueryRow(queries.GetReceiptItem, receiptItemID)
 
 	err := row.Scan(
 		&receiptItem.Receipt_Item_ID,
@@ -328,7 +329,7 @@ func GetReceiptItem(receiptItemID int, db *sql.DB) (*models.ReceiptItem, error) 
 func GetAllReceiptItems(db *sql.DB) ([]*models.ReceiptItem, error) {
 	var receiptItems []*models.ReceiptItem
 
-	rows, err := db.Query(getAllReceiptItems)
+	rows, err := db.Query(queries.GetAllReceiptItems)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving receiptItems: %w", err)
 	}

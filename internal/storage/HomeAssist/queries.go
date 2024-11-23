@@ -1,4 +1,4 @@
-package database
+package HomeAssist
 
 const (
 	InsertItemQuery = `
@@ -20,39 +20,39 @@ const (
 		VALUES ($1, $2, $3, $4, $5)
 	`
 
-	getItem = `
+	GetItem = `
 		SELECT * FROM items
 		WHERE item_id = $1
 		`
 
-	getAllItems = `
+	GetAllItems = `
 		SELECT * FROM items
 		`
 
-	getStore = `
+	GetStore = `
 		SELECT * FROM stores
 		WHERE store_id = $1
 		`
 
-	getAllStores = `
+	GetAllStores = `
 		SELECT * FROM stores
 		`
 
-	getReceipt = `
+	GetReceipt = `
 		SELECT * FROM receipts
 		WHERE receipt_id = $1
 		`
 
-	getAllReceipts = `
+	GetAllReceipts = `
 		SELECT * FROM receipts
 		`
 
-	getReceiptItem = `
+	GetReceiptItem = `
 		SELECT * FROM receipt_items
 		WHERE Receipt_Item_ID = $1
 		`
 
-	getAllReceiptItems = `
+	GetAllReceiptItems = `
 		SELECT * FROM receipt_items
 		`
 )

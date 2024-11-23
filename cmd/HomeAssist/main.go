@@ -1,8 +1,8 @@
 package main
 
 import (
-	"HomeAssist/database"
-	"HomeAssist/models"
+	"HomeAssist/internal/models"
+	"HomeAssist/internal/storage/database"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -287,8 +287,7 @@ func main() {
 	}
 	defer db.Close()
 
-	migrationsDir := "../SQL Migration"
-	database.Migration(db, migrationsDir)
+	database.Migration(db)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/hc", hc).Methods("GET")

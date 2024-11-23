@@ -8,7 +8,9 @@ import (
 	"strings"
 )
 
-func Migration(db *sql.DB, migrationsDir string) {
+var migrationsDir = `internal\storage\SQL Migration`
+
+func Migration(db *sql.DB) {
 	// Read all files in the migrations directory
 	err := filepath.Walk(migrationsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
