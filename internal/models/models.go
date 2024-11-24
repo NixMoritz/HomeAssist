@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Store struct {
 	Store_ID      int       `json:"store_id"`      // Unique identifier for each store

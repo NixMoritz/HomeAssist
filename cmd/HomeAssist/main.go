@@ -2,6 +2,7 @@ package main
 
 import (
 	"HomeAssist/internal/api/HomeAssist"
+	"HomeAssist/internal/config"
 	"HomeAssist/internal/models"
 	"HomeAssist/internal/storage/database"
 	"database/sql"
@@ -273,6 +274,9 @@ func einkaufen(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var err error
+
+	config.LoadConfig()
+
 	db, err = database.InitDB()
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)

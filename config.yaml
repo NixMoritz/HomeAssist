@@ -1,0 +1,14 @@
+log:
+  loglevel: "INFO"
+  fileLog:
+    path: ""
+    filename: "HomeAssist.log"
+    maxSize: 100 # in MB
+    maxAge: 7 # in days
+
+database:
+  host: "localhost"
+  user: "admin"
+  password: "admin"
+  port: 5432
+  dbName: "HomeAssist"

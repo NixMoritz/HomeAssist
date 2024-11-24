@@ -1,6 +1,7 @@
 package database
 
 import (
+	"HomeAssist/internal/config"
 	"HomeAssist/internal/models"
 	queries "HomeAssist/internal/storage/HomeAssist"
 	"database/sql"
@@ -11,51 +12,52 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const (
-	host     = "localhost"
-	port     = 5432
-	user     = "admin"
-	password = "admin"
-	dbname   = "HomeAssist"
-)
-
 var err error
+
+const (
+	MaxOpenConns    = 25
+	MaxIdleConns    = 25
+	ConnMaxLifetime = 5 * time.Minute
+)
 
 // InitDB initializes and returns a DB connection
 func InitDB() (*sql.DB, error) {
+	dbConfig := config.GetDatabaseValues()
 
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+	if dbConfig.Host == "" || dbConfig.Port == 0 || dbConfig.Username == "" || dbConfig.Password == "" || dbConfig.DBname == "" {
+		return nil, fmt.Errorf("incomplete database configuration: %+v", dbConfig)
+	}
 
-	// Open a database connection
+	psqlInfo, err := buildConnectionString(*dbConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build database connection string: %w", err)
+	}
+
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
-		return nil, fmt.Errorf("error opening database: %w", err)
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	// Set database connection pool settings
-	db.SetMaxOpenConns(25)                 // Maximum number of open connections to the database
-	db.SetMaxIdleConns(25)                 // Maximum number of connections in the idle connection pool
-	db.SetConnMaxLifetime(5 * time.Minute) // Maximum amount of time a connection may be reused
+	db.SetMaxOpenConns(MaxOpenConns)
+	db.SetMaxIdleConns(MaxIdleConns)
+	db.SetConnMaxLifetime(ConnMaxLifetime)
 
-	// Test the database connection
 	if err := db.Ping(); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("error pinging database: %w", err)
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Println("Database connection successfully initialized")
+	log.Println("Database connection successfully initialized with settings:")
+	log.Printf("Host: %s, Port: %d, DB: %s\n", dbConfig.Host, dbConfig.Port, dbConfig.DBname)
+
 	return db, nil
 }
 
-func Healthcheck(db *sql.DB) bool {
-	err = db.Ping()
-	if err != nil {
-		log.Fatalf("Error connecting to the database: %v", err)
-		return false
-	}
-	fmt.Println("Successfully connected!")
-	return true
+func buildConnectionString(cfg config.Database) (string, error) {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.DBname,
+	), nil
 }
 
 func AddNewStore(store models.Store, db *sql.DB) {
