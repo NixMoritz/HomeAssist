@@ -9,9 +9,3 @@ up:
 
 down:
 		docker-compose down
-
-build:
-		go build -o homeassist backend/main.go
-
-clean:
-		rm -f homeassist
