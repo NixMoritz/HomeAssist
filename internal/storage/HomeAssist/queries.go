@@ -55,4 +55,24 @@ const (
 	GetAllReceiptItems = `
 		SELECT * FROM receipt_items
 		`
+
+	DeleteItem = `
+		DELETE FROM items 
+		WHERE item_id = $1
+		`
+
+	DeleteStore = `
+		DELETE FROM stores
+		WHERE store_id = $1
+		`
+
+	DeleteReceipt = `
+		DELETE FROM receipts 
+		WHERE receipt_id = $1
+		`
+
+	DeleteReceiptItem = `
+		DELETE FROM receipt_items 
+		WHERE Receipt_Item_ID = $1
+		`
 )

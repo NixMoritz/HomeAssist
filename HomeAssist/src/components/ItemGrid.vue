@@ -23,7 +23,7 @@
           </div>
           <div class="item-actions">
             <button @click="editItem(item)" class="edit-button">Edit</button>
-            <button @click="deleteItem(item.Item_ID)" class="delete-button">Delete</button>
+            <button @click="deleteItem(item.item_id)" class="delete-button">Delete</button>
           </div>
         </div>
       </div>
@@ -59,6 +59,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { toRaw } from 'vue'
 
 interface Item {
   Item_ID: number
@@ -100,9 +101,10 @@ const fetchItems = async () => {
     }
 
     const textData = await response.text()
-    console.log('Data:', textData)
+    console.log('Data:', textData) // Log the raw data
     try {
       items.value = JSON.parse(textData)
+      console.log('Parsed items:', items.value) // Log the parsed items
     } catch (parseError) {
       console.error('Response was not JSON:', textData)
       throw new Error('Server response was not in JSON format')
@@ -143,18 +145,29 @@ const formatDate = (dateString: string) => {
 }
 
 const deleteItem = async (itemId: number) => {
+  // Check if the itemId is correct by unwrapping the Proxy
+  console.log('Item ID to delete:', itemId)
+
+  if (itemId === undefined || itemId === null) {
+    console.error('Invalid item ID')
+    return // Exit early if ID is invalid
+  }
+
   if (!confirm('Are you sure you want to delete this item?')) {
     return
   }
+
   try {
-    const response = await fetch(`http://localhost:8080/api/items/${itemId}`, {
+    const response = await fetch(`http://localhost:8080/api/items?item_id=${itemId}`, {
       method: 'DELETE',
     })
     if (!response.ok) {
       console.error(`Failed to delete item, HTTP error! status: ${response.status}`)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
-    items.value = items.value.filter((item) => item.Item_ID !== itemId)
+
+    // Use `toRaw` to get the unwrapped item data
+    items.value = items.value.filter((item) => toRaw(item).item_id !== itemId)
     console.log(`Item with ID ${itemId} deleted successfully`)
   } catch (error) {
     console.error('Failed to delete item:', error)

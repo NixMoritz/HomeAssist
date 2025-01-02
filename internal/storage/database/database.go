@@ -177,6 +177,24 @@ func GetItem(itemID int, db *sql.DB) (*models.Item, error) {
 	return &item, nil
 }
 
+func DeleteItem(itemID int, db *sql.DB) error {
+	result, err := db.Exec(queries.DeleteItem, itemID)
+	if err != nil {
+		return fmt.Errorf("error deleting item: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("item with ID %d not found", itemID)
+	}
+
+	return nil
+}
+
 func GetAllItems(db *sql.DB) ([]*models.Item, error) {
 	var items []*models.Item
 

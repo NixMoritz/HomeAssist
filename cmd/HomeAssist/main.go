@@ -19,6 +19,24 @@ import (
 // Global variable to store the DB connection
 var db *sql.DB
 
+// Middleware to handle CORS
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight requests
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func putStore(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -114,6 +132,26 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(item)
+}
+
+func deleteItem(w http.ResponseWriter, r *http.Request) {
+	itemID, err := strconv.Atoi(r.URL.Query().Get("item_id"))
+	if err != nil {
+		http.Error(w, "Invalid item ID", http.StatusBadRequest)
+		return
+	}
+
+	err = database.DeleteItem(itemID, db)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, err.Error(), http.StatusNotFound)
+		} else {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func getAllItems(w http.ResponseWriter, r *http.Request) {
@@ -292,6 +330,7 @@ func main() {
 	router.HandleFunc("/api/stores", getStore).Methods("GET")
 	router.HandleFunc("/api/stores/all", getAllStores).Methods("GET")
 
+	router.HandleFunc("/api/items", deleteItem).Methods("DELETE")
 	router.HandleFunc("/api/items", putItem).Methods("PUT")
 	router.HandleFunc("/api/items", getItem).Methods("GET")
 	router.HandleFunc("/api/items/all", getAllItems).Methods("GET")
@@ -307,5 +346,5 @@ func main() {
 	router.HandleFunc("/einkaufen", einkaufen).Methods("PUT")
 
 	log.Println("Server started on :8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":8080", corsMiddleware(router)))
 }
