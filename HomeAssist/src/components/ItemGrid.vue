@@ -134,14 +134,23 @@ onMounted(() => {
 })
 
 const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('de-DE', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'EUR',
   }).format(price)
 }
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString()
+  const date = new Date(dateString)
+  return date.toLocaleString('de-DE', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
 }
 
 const deleteItem = async (itemId: number) => {
