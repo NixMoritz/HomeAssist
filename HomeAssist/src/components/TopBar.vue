@@ -13,7 +13,7 @@ import { RouterLink } from 'vue-router'
       <div class="nav-links">
         <RouterLink to="/" class="nav-link">Home</RouterLink>
         <RouterLink to="/about" class="nav-link">About</RouterLink>
-        <RouterLink to="/contact" class="nav-link">Contact</RouterLink>
+        <RouterLink to="/items" class="nav-link">Items</RouterLink>
       </div>
     </div>
   </nav>
