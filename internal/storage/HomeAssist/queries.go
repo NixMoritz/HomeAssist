@@ -75,4 +75,29 @@ const (
 		DELETE FROM receipt_items 
 		WHERE Receipt_Item_ID = $1
 		`
+
+	UpdateItem = `
+		UPDATE items
+		SET item_name = $1,
+			unit_price = $2,
+			units = $3,
+			store_branch = $4,
+			weight = $5
+		WHERE item_id = $6
+	`
+
+	UpdateStore = `
+		DELETE FROM stores
+		WHERE store_id = $1
+		`
+
+	UpdateReceipt = `
+		DELETE FROM receipts 
+		WHERE receipt_id = $1
+		`
+
+	UpdateReceiptItem = `
+		DELETE FROM receipt_items 
+		WHERE Receipt_Item_ID = $1
+		`
 )

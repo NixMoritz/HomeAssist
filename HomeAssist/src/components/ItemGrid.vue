@@ -9,6 +9,38 @@
       <button @click="retryFetchItems" class="retry-button">Retry</button>
     </div>
 
+    <!-- Add Item Button -->
+    <div class="add-item-container">
+      <button @click="openAddItemModal" class="add-item-button">Add Item</button>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div v-if="showAddItemModal" class="modal-overlay">
+      <div class="modal">
+        <h2>Add New Item</h2>
+        <div class="modal-content">
+          <label for="addItemName">Name:</label>
+          <input type="text" id="addItemName" v-model="newItem.Item_Name" />
+
+          <label for="addUnitPrice">Price:</label>
+          <input type="number" id="addUnitPrice" v-model.number="newItem.Unit_Price" />
+
+          <label for="addUnits">Units:</label>
+          <input type="number" id="addUnits" v-model.number="newItem.Units" />
+
+          <label for="addStoreBranch">Store Branch:</label>
+          <input type="text" id="addStoreBranch" v-model="newItem.Store_Branch" />
+
+          <label for="addWeight">Weight:</label>
+          <input type="number" id="addWeight" v-model.number="newItem.Weight" />
+        </div>
+        <div class="modal-actions">
+          <button @click="addNewItem" class="save-button">Add</button>
+          <button @click="closeAddItemModal" class="cancel-button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Items Grid -->
     <div v-else class="items-grid">
       <div v-for="item in items" :key="item.Item_ID" class="item-card">
@@ -44,7 +76,7 @@
         <input type="number" id="editUnits" v-model.number="editedItem.Units" />
 
         <label for="editStoreBranch">Store Branch:</label>
-        <input type="number" id="editStoreBranch" v-model.number="editedItem.Store_Branch" />
+        <input type="text" id="editStoreBranch" v-model="editedItem.Store_Branch" />
 
         <label for="editWeight">Weight:</label>
         <input type="number" id="editWeight" v-model.number="editedItem.Weight" />
@@ -66,7 +98,7 @@ interface Item {
   Item_Name: string
   Unit_Price: number
   Units: number
-  Store_Branch: number
+  Store_Branch: string
   Weight: number
   Updated_At: string
 }
@@ -80,10 +112,59 @@ const editedItem = ref<Item>({
   Item_Name: '',
   Unit_Price: 0,
   Units: 0,
-  Store_Branch: 0,
+  Store_Branch: '',
   Weight: 0,
   Updated_At: '',
 })
+
+const showAddItemModal = ref(false)
+const newItem = ref<Item>({
+  Item_ID: 0,
+  Item_Name: '',
+  Unit_Price: 0,
+  Units: 0,
+  Store_Branch: '',
+  Weight: 0,
+  Updated_At: new Date().toISOString(),
+})
+
+const openAddItemModal = () => {
+  showAddItemModal.value = true
+  newItem.value = {
+    Item_ID: 0,
+    Item_Name: '',
+    Unit_Price: 0,
+    Units: 0,
+    Store_Branch: '',
+    Weight: 0,
+    Updated_At: new Date().toISOString(),
+  }
+}
+
+const closeAddItemModal = () => {
+  showAddItemModal.value = false
+}
+
+const addNewItem = async () => {
+  try {
+    const response = await fetch('http://localhost:8080/api/items/create', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newItem.value),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const createdItem = await response.json()
+    items.value.push(createdItem)
+    console.log(`New item added successfully:`, createdItem)
+    showAddItemModal.value = false
+  } catch (error) {
+    console.error('Failed to add new item:', error)
+  }
+}
 
 const fetchItems = async () => {
   try {
@@ -154,12 +235,11 @@ const formatDate = (dateString: string) => {
 }
 
 const deleteItem = async (itemId: number) => {
-  // Check if the itemId is correct by unwrapping the Proxy
   console.log('Item ID to delete:', itemId)
 
   if (itemId === undefined || itemId === null) {
     console.error('Invalid item ID')
-    return // Exit early if ID is invalid
+    return
   }
 
   if (!confirm('Are you sure you want to delete this item?')) {
@@ -167,7 +247,7 @@ const deleteItem = async (itemId: number) => {
   }
 
   try {
-    const response = await fetch(`http://localhost:8080/api/items?item_id=${itemId}`, {
+    const response = await fetch(`http://localhost:8080/api/items/delete?item_id=${itemId}`, {
       method: 'DELETE',
     })
     if (!response.ok) {
@@ -192,7 +272,7 @@ const closeModal = () => {
 
 const saveEditedItem = async () => {
   try {
-    const response = await fetch(`http://localhost:8080/api/items/${editedItem.value.Item_ID}`, {
+    const response = await fetch(`http://localhost:8080/api/items/update`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editedItem.value),
@@ -203,13 +283,16 @@ const saveEditedItem = async () => {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
-    const updatedItem = await response.json()
-    //Update the items array
+    const responseData = await response.json()
+
     items.value = items.value.map((item) =>
-      item.Item_ID === updatedItem.Item_ID ? { ...item, ...updatedItem } : item,
+      item.Item_ID === editedItem.value.Item_ID ? { ...item, ...editedItem.value } : item,
     )
 
-    console.log(`Item with ID ${editedItem.value.Item_ID} updated successfully`)
+    console.log(
+      `Item with ID ${editedItem.value.Item_ID} updated successfully:`,
+      responseData.message,
+    )
     showModal.value = false
   } catch (error) {
     console.error('Failed to update item:', error)
@@ -421,11 +504,30 @@ const saveEditedItem = async () => {
   background-color: #22c55e;
 }
 .cancel-button {
-  background-color: #f1f5f9;
+  background-color: #5e5e5f;
   color: var(--color-text);
   transition: background-color 0.3s ease;
 }
 .cancel-button:hover {
-  background-color: #e2e8f0;
+  background-color: #242424;
+}
+
+.add-item-container {
+  text-align: right;
+  margin-bottom: 20px;
+}
+
+.add-item-button {
+  padding: 10px 15px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-item-button:hover {
+  background-color: #1d4ed8;
 }
 </style>

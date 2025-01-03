@@ -195,6 +195,27 @@ func DeleteItem(itemID int, db *sql.DB) error {
 	return nil
 }
 
+func UpdateItem(item models.Item, db *sql.DB) error {
+	fmt.Printf("Updating item with ID: %d\n", item.Item_ID)
+	fmt.Printf("Values: Name=%s, Price=%f, Units=%f, Branch=%s, Weight=%f\n", item.Item_Name, item.Unit_Price, item.Units, item.Store_Branch, item.Weight)
+
+	result, err := db.Exec(queries.UpdateItem, item.Item_Name, item.Unit_Price, item.Units, item.Store_Branch, item.Weight, item.Item_ID)
+	if err != nil {
+		return fmt.Errorf("error updating item: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("item with ID %d not found", item.Item_ID)
+	}
+
+	return nil
+}
+
 func GetAllItems(db *sql.DB) ([]*models.Item, error) {
 	var items []*models.Item
 

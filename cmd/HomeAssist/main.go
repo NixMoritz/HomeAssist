@@ -113,6 +113,38 @@ func putItem(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func updateItem(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var item models.Item
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		http.Error(w, "Bad request: invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Received item: %+v\n", item)
+
+	if item.Item_ID == 0 {
+		http.Error(w, "Bad request: item ID is missing", http.StatusBadRequest)
+		return
+	}
+
+	err := database.UpdateItem(item, db)
+	if err != nil {
+		http.Error(w, "Internal server error: could not update item"+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	response := map[string]string{"message": "Item updated successfully"}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
 func getItem(w http.ResponseWriter, r *http.Request) {
 	itemID, err := strconv.Atoi(r.URL.Query().Get("item_id"))
 	if err != nil {
@@ -330,8 +362,9 @@ func main() {
 	router.HandleFunc("/api/stores", getStore).Methods("GET")
 	router.HandleFunc("/api/stores/all", getAllStores).Methods("GET")
 
-	router.HandleFunc("/api/items", deleteItem).Methods("DELETE")
-	router.HandleFunc("/api/items", putItem).Methods("PUT")
+	router.HandleFunc("/api/items/delete", deleteItem).Methods("DELETE")
+	router.HandleFunc("/api/items/update", updateItem).Methods("PUT")
+	router.HandleFunc("/api/items/create", putItem).Methods("PUT")
 	router.HandleFunc("/api/items", getItem).Methods("GET")
 	router.HandleFunc("/api/items/all", getAllItems).Methods("GET")
 
