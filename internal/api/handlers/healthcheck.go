@@ -1,4 +1,4 @@
-package HomeAssist
+package handlers
 
 import (
 	"database/sql"
@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 type HealthCheckResult struct {
@@ -22,7 +24,17 @@ type Check struct {
 	ResponseTimeMS float32 `json:"response_time_ms,omitempty"`
 }
 
-func GetHC(w http.ResponseWriter, db *sql.DB) {
+func RegisterHealthCheckHandlers(router *mux.Router, db *sql.DB) {
+	router.HandleFunc("/hc", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		getHC(w, db)
+	}).Methods(http.MethodGet)
+}
+
+func getHC(w http.ResponseWriter, db *sql.DB) {
 	startTime := time.Now()
 	health := "healthy"
 	checks := make([]Check, 0)
