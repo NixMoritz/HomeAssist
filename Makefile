@@ -8,7 +8,7 @@ up:
 	docker-compose up
 
 front:
-	cd HomeAssist && npm run dev
+	cd Frontend && npm run dev
 
 down:
 	docker-compose down
