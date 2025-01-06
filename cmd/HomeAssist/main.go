@@ -12,8 +12,6 @@ import (
 )
 
 func main() {
-	var err error
-
 	config.LoadConfig()
 
 	db, err := database.InitDB()
@@ -22,7 +20,11 @@ func main() {
 	}
 	defer db.Close()
 
-	database.Migration(db)
+	migration := false
+
+	if migration {
+		database.Migration(db)
+	}
 
 	router := mux.NewRouter()
 
