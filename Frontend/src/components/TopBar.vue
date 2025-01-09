@@ -6,12 +6,14 @@ import { RouterLink } from 'vue-router'
 <template>
   <nav class="top-bar">
     <div class="container">
-      <div class="logo-section">
-        <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="40" height="40" />
-        <span class="site-name">HomeAssist</span>
-      </div>
+      <RouterLink to="/" class="logo-link">
+        <div class="logo-section">
+          <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="40" height="40" />
+          <span class="site-name">HomeAssist</span>
+        </div>
+      </RouterLink>
       <div class="nav-links">
-        <RouterLink to="/" class="nav-link">Home</RouterLink>
+        <RouterLink to="/dashboard" class="nav-link">Dashboard</RouterLink>
         <RouterLink to="/about" class="nav-link">About</RouterLink>
         <RouterLink to="/items" class="nav-link">Items</RouterLink>
       </div>
@@ -37,6 +39,11 @@ import { RouterLink } from 'vue-router'
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.logo-link {
+  text-decoration: none; /* Remove default link styling */
+  color: inherit; /* Inherit color from parent for the logo text*/
 }
 
 .logo-section {
