@@ -1,4 +1,3 @@
-// store.go
 package handlers
 
 import (
@@ -15,62 +14,59 @@ import (
 
 func RegisterStoreHandlers(router *mux.Router, db *sql.DB) {
 	router.HandleFunc("/api/stores", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPut {
+		switch r.Method {
+		case http.MethodPut:
 			putStore(w, r, db)
-		} else {
+		case http.MethodGet:
 			getStore(w, r, db)
+		default:
+			respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		}
-	}).Methods("PUT", "GET")
+	})
 
 	router.HandleFunc("/api/stores/all", func(w http.ResponseWriter, r *http.Request) {
 		getAllStores(w, r, db)
-	}).Methods("GET")
+	}).Methods(http.MethodGet)
 }
 
 func putStore(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	var store models.Store
 	if err := json.NewDecoder(r.Body).Decode(&store); err != nil {
-		http.Error(w, "Bad request: invalid JSON format", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Bad request: invalid JSON format")
 		return
 	}
 	database.AddNewStore(store, db)
-	response := map[string]string{"message": "store received successfully"}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	respondWithJSON(w, http.StatusCreated, map[string]string{"message": "Store created successfully"})
 }
 
 func getStore(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	storeID, err := strconv.Atoi(r.URL.Query().Get("store_id"))
 	if err != nil {
-		http.Error(w, "Invalid store ID", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid store ID")
 		return
 	}
 
 	store, err := database.GetStore(storeID, db)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			respondWithError(w, http.StatusNotFound, err.Error())
 		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(store)
+	respondWithJSON(w, http.StatusOK, store)
 }
 
 func getAllStores(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	stores, err := database.GetAllStores(db)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			respondWithError(w, http.StatusNotFound, err.Error())
 		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stores)
+	respondWithJSON(w, http.StatusOK, stores)
 }

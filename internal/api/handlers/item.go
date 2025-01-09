@@ -15,109 +15,105 @@ import (
 func RegisterItemHandlers(router *mux.Router, db *sql.DB) {
 	router.HandleFunc("/api/items/delete", func(w http.ResponseWriter, r *http.Request) {
 		deleteItem(w, r, db)
-	}).Methods("DELETE")
+	}).Methods(http.MethodDelete)
 
 	router.HandleFunc("/api/items/update", func(w http.ResponseWriter, r *http.Request) {
 		updateItem(w, r, db)
-	}).Methods("PUT")
+	}).Methods(http.MethodPut)
 
 	router.HandleFunc("/api/items/create", func(w http.ResponseWriter, r *http.Request) {
 		putItem(w, r, db)
-	}).Methods("PUT")
+	}).Methods(http.MethodPut)
 
 	router.HandleFunc("/api/items", func(w http.ResponseWriter, r *http.Request) {
-		getItem(w, r, db)
-	}).Methods("GET")
+		if r.URL.Query().Get("item_id") != "" {
+			getItem(w, r, db)
+		} else {
+			getAllItems(w, r, db)
+		}
 
-	router.HandleFunc("/api/items/all", func(w http.ResponseWriter, r *http.Request) {
-		getAllItems(w, r, db)
-	}).Methods("GET")
+	}).Methods(http.MethodGet)
 }
 
 func putItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	var item models.Item
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		http.Error(w, "Bad request: invalid JSON format", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Bad request: invalid JSON format")
 		return
 	}
 	database.AddNewItem(item, db)
-	response := map[string]string{"message": "Item received successfully"}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	respondWithJSON(w, http.StatusCreated, map[string]string{"message": "Item created successfully"})
 }
 
 func updateItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	var item models.Item
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		http.Error(w, "Bad request: invalid JSON format", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Bad request: invalid JSON format")
 		return
 	}
 
 	if item.Item_ID == 0 {
-		http.Error(w, "Bad request: item ID is missing", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Bad request: item ID is missing")
 		return
 	}
 
 	err := database.UpdateItem(item, db)
 	if err != nil {
-		http.Error(w, "Internal server error: could not update item", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "Internal server error: could not update item")
 		return
 	}
-	response := map[string]string{"message": "Item updated successfully"}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Item updated successfully"})
 }
 
 func deleteItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	itemID, err := strconv.Atoi(r.URL.Query().Get("item_id"))
 	if err != nil {
-		http.Error(w, "Invalid item ID", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid item ID")
 		return
 	}
 
 	err = database.DeleteItem(itemID, db)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			respondWithError(w, http.StatusNotFound, err.Error())
 		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func getItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	itemID, err := strconv.Atoi(r.URL.Query().Get("item_id"))
 	if err != nil {
-		http.Error(w, "Invalid item ID", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid item ID")
 		return
 	}
 
 	item, err := database.GetItem(itemID, db)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			respondWithError(w, http.StatusNotFound, err.Error())
 		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(item)
+	respondWithJSON(w, http.StatusOK, item)
 }
 
 func getAllItems(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	items, err := database.GetAllItems(db)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			respondWithError(w, http.StatusNotFound, err.Error())
 		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+
+	respondWithJSON(w, http.StatusOK, items)
 }

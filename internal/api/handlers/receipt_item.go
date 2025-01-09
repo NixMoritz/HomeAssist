@@ -5,7 +5,6 @@ import (
 	"HomeAssist/internal/storage/database"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,68 +14,62 @@ import (
 
 func RegisterReceiptItemHandlers(router *mux.Router, db *sql.DB) {
 	router.HandleFunc("/api/receiptItem", func(w http.ResponseWriter, r *http.Request) {
-		updateItem(w, r, db)
-	}).Methods("PUT")
-	router.HandleFunc("/api/receiptItem", func(w http.ResponseWriter, r *http.Request) {
-		updateItem(w, r, db)
-	}).Methods("GET")
-	router.HandleFunc("/api/receiptItem/all", func(w http.ResponseWriter, r *http.Request) {
-		updateItem(w, r, db)
-	}).Methods("GET")
+		switch r.Method {
+		case http.MethodPut:
+			putReceiptItem(w, r, db)
+		case http.MethodGet:
+			if r.URL.Query().Get("receiptItem_id") != "" {
+				getReceiptItem(w, r, db)
+			} else {
+				getAllReceiptItems(w, r, db)
+			}
+		default:
+			respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		}
+	})
+
 }
 
 func putReceiptItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var receiptItem models.ReceiptItem
 	if err := json.NewDecoder(r.Body).Decode(&receiptItem); err != nil {
-		http.Error(w, "Bad request: invalid JSON format", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Bad request: invalid JSON format")
 		return
 	}
 
-	fmt.Printf("Received receiptItem: %+v\n", receiptItem)
 	database.AddNewReceiptItem(receiptItem, db)
-
-	w.Header().Set("Content-Type", "application/json")
-	response := map[string]string{"message": "ReceiptItem received successfully"}
-	json.NewEncoder(w).Encode(response)
+	respondWithJSON(w, http.StatusCreated, map[string]string{"message": "ReceiptItem received successfully"})
 }
 
 func getReceiptItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	receiptItemID, err := strconv.Atoi(r.URL.Query().Get("receiptItem_id"))
 	if err != nil {
-		http.Error(w, "Invalid receiptItem ID", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid receiptItem ID")
 		return
 	}
 
 	receiptItem, err := database.GetReceiptItem(receiptItemID, db)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			respondWithError(w, http.StatusNotFound, err.Error())
 		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(receiptItem)
+	respondWithJSON(w, http.StatusOK, receiptItem)
 }
 
 func getAllReceiptItems(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	receiptItems, err := database.GetAllReceiptItems(db)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			respondWithError(w, http.StatusNotFound, err.Error())
 		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(receiptItems)
+	respondWithJSON(w, http.StatusOK, receiptItems)
 }
