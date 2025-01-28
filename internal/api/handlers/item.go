@@ -5,9 +5,11 @@ import (
 	"HomeAssist/internal/storage/database"
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -36,33 +38,58 @@ func RegisterItemHandlers(router *mux.Router, db *sql.DB) {
 }
 
 func putItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var item models.Item
-	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Bad request: invalid JSON format")
+	var input models.Items
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		log.Printf("Error decoding items: %v", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-	database.AddNewItem(item, db)
-	respondWithJSON(w, http.StatusCreated, map[string]string{"message": "Item created successfully"})
+
+	var addedItems []models.Item
+	for _, item := range input.Items {
+
+		// Validate required fields
+		if item.Item_Name == "" {
+			respondWithError(w, http.StatusBadRequest, "Item name is required")
+			return
+		}
+
+		err := database.AddNewItem(item, db)
+		if err != nil {
+			log.Printf("Error adding item: %v", err)
+			respondWithError(w, http.StatusInternalServerError, "Error adding item")
+			return
+		}
+
+		addedItems = append(addedItems, item)
+	}
+
+	respondWithJSON(w, http.StatusCreated, addedItems)
 }
 
 func updateItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	var item models.Item
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Bad request: invalid JSON format")
+		log.Printf("Error decoding item: %v", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
-	if item.Item_ID == 0 {
-		respondWithError(w, http.StatusBadRequest, "Bad request: item ID is missing")
-		return
-	}
+	// Set the updated timestamp
+	item.Updated_At = time.Now()
 
 	err := database.UpdateItem(item, db)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Internal server error: could not update item")
+		log.Printf("Error updating item: %v", err)
+		if strings.Contains(err.Error(), "not found") {
+			respondWithError(w, http.StatusNotFound, err.Error())
+		} else {
+			respondWithError(w, http.StatusInternalServerError, "Error updating item")
+		}
 		return
 	}
-	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Item updated successfully"})
+
+	respondWithJSON(w, http.StatusOK, item)
 }
 
 func deleteItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
@@ -107,11 +134,8 @@ func getItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 func getAllItems(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	items, err := database.GetAllItems(db)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			respondWithError(w, http.StatusNotFound, err.Error())
-		} else {
-			respondWithError(w, http.StatusInternalServerError, "Internal server error")
-		}
+		log.Printf("Error getting items: %v", err)
+		respondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 

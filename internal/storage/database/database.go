@@ -137,34 +137,43 @@ func GetAllStores(db *sql.DB) ([]*models.Store, error) {
 	return stores, nil
 }
 
-func AddNewItem(item models.Item, db *sql.DB) {
-
-	_, err := db.Exec(
+func AddNewItem(item models.Item, db *sql.DB) error {
+	var itemID int
+	err := db.QueryRow(
 		queries.InsertItemQuery,
 		item.Item_Name,
 		item.Unit_Price,
 		item.Units,
 		item.Store_Branch,
 		item.Weight,
-	)
+		item.Category,
+		item.Subcategory,
+		item.Is_Organic,
+		item.Brand_Name,
+		item.Barcode,
+	).Scan(&itemID)
 
 	if err != nil {
-		log.Fatalf("Error inserting new item: %v", err)
+		return fmt.Errorf("error inserting item: %w", err)
 	}
+
+	return nil
 }
 
 func GetItem(itemID int, db *sql.DB) (*models.Item, error) {
 	var item models.Item
-
-	row := db.QueryRow(queries.GetItem, itemID)
-
-	err := row.Scan(
+	err := db.QueryRow(queries.GetItem, itemID).Scan(
 		&item.Item_ID,
 		&item.Item_Name,
 		&item.Unit_Price,
 		&item.Units,
 		&item.Store_Branch,
 		&item.Weight,
+		&item.Category,
+		&item.Subcategory,
+		&item.Is_Organic,
+		&item.Brand_Name,
+		&item.Barcode,
 		&item.Updated_At,
 	)
 	if err != nil {
@@ -173,7 +182,6 @@ func GetItem(itemID int, db *sql.DB) (*models.Item, error) {
 		}
 		return nil, fmt.Errorf("error retrieving item: %w", err)
 	}
-
 	return &item, nil
 }
 
@@ -196,10 +204,21 @@ func DeleteItem(itemID int, db *sql.DB) error {
 }
 
 func UpdateItem(item models.Item, db *sql.DB) error {
-	fmt.Printf("Updating item with ID: %d\n", item.Item_ID)
-	fmt.Printf("Values: Name=%s, Price=%f, Units=%f, Branch=%s, Weight=%f\n", item.Item_Name, item.Unit_Price, item.Units, item.Store_Branch, item.Weight)
-
-	result, err := db.Exec(queries.UpdateItem, item.Item_Name, item.Unit_Price, item.Units, item.Store_Branch, item.Weight, item.Item_ID)
+	result, err := db.Exec(
+		queries.UpdateItem,
+		item.Item_Name,
+		item.Unit_Price,
+		item.Units,
+		item.Store_Branch,
+		item.Weight,
+		item.Category,
+		item.Subcategory,
+		item.Is_Organic,
+		item.Brand_Name,
+		item.Barcode,
+		item.Updated_At,
+		item.Item_ID,
+	)
 	if err != nil {
 		return fmt.Errorf("error updating item: %w", err)
 	}
@@ -234,9 +253,15 @@ func GetAllItems(db *sql.DB) ([]*models.Item, error) {
 			&item.Units,
 			&item.Store_Branch,
 			&item.Weight,
+			&item.Category,
+			&item.Subcategory,
+			&item.Is_Organic,
+			&item.Brand_Name,
+			&item.Barcode,
 			&item.Updated_At,
 		)
 		if err != nil {
+			log.Printf("Scan error: %v", err)
 			return nil, fmt.Errorf("error scanning item: %w", err)
 		}
 		items = append(items, &item)
@@ -244,6 +269,10 @@ func GetAllItems(db *sql.DB) ([]*models.Item, error) {
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating through items: %w", err)
+	}
+
+	if len(items) == 0 {
+		return []*models.Item{}, nil
 	}
 
 	return items, nil

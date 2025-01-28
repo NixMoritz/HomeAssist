@@ -20,19 +20,38 @@
         <h2>Add New Item</h2>
         <div class="modal-content">
           <label for="addItemName">Name:</label>
-          <input type="text" id="addItemName" v-model="newItem.Item_Name" />
+          <input type="text" id="addItemName" v-model="newItem.item_name" />
 
           <label for="addUnitPrice">Price:</label>
-          <input type="number" id="addUnitPrice" v-model.number="newItem.Unit_Price" />
+          <input type="number" id="addUnitPrice" v-model.number="newItem.unit_price" step="0.01" />
 
           <label for="addUnits">Units:</label>
-          <input type="number" id="addUnits" v-model.number="newItem.Units" />
+          <input type="number" id="addUnits" v-model.number="newItem.units" />
 
           <label for="addStoreBranch">Store Branch:</label>
-          <input type="text" id="addStoreBranch" v-model="newItem.Store_Branch" />
+          <input type="text" id="addStoreBranch" v-model="newItem.store_branch" />
 
           <label for="addWeight">Weight:</label>
-          <input type="number" id="addWeight" v-model.number="newItem.Weight" />
+          <input type="number" id="addWeight" v-model.number="newItem.weight" step="0.01" />
+
+          <label for="addCategory">Category:</label>
+          <input type="text" id="addCategory" v-model="newItem.category" />
+
+          <label for="addSubcategory">Subcategory:</label>
+          <input type="text" id="addSubcategory" v-model="newItem.subcategory" />
+
+          <label for="addIsOrganic">Organic:</label>
+          <select id="addIsOrganic" v-model="newItem.is_organic">
+            <option :value="null">Unknown</option>
+            <option :value="true">Yes</option>
+            <option :value="false">No</option>
+          </select>
+
+          <label for="addBrandName">Brand:</label>
+          <input type="text" id="addBrandName" v-model="newItem.brand_name" />
+
+          <label for="addBarcode">Barcode:</label>
+          <input type="text" id="addBarcode" v-model="newItem.barcode" />
         </div>
         <div class="modal-actions">
           <button @click="addNewItem" class="save-button">Add</button>
@@ -43,7 +62,7 @@
 
     <!-- Items Grid -->
     <div v-else class="items-grid">
-      <div v-for="item in items" :key="item.Item_ID" class="item-card">
+      <div v-for="item in items" :key="item.item_id" class="item-card">
         <div class="item-content">
           <h3 class="item-title">{{ item.item_name }}</h3>
           <div class="item-details">
@@ -51,6 +70,14 @@
             <p><strong>Units:</strong> {{ item.units }}</p>
             <p><strong>Store Branch:</strong> {{ item.store_branch }}</p>
             <p><strong>Weight:</strong> {{ item.weight }}kg</p>
+            <p><strong>Category:</strong> {{ getNullableString(item.category) }}</p>
+            <p><strong>Subcategory:</strong> {{ getNullableString(item.subcategory) }}</p>
+            <p>
+              <strong>Organic:</strong>
+              {{ item.is_organic === null ? '-' : item.is_organic ? 'Yes' : 'No' }}
+            </p>
+            <p><strong>Brand:</strong> {{ getNullableString(item.brand_name) }}</p>
+            <p><strong>Barcode:</strong> {{ getNullableString(item.barcode) }}</p>
             <p class="updated-at">Last updated: {{ formatDate(item.updated_at) }}</p>
           </div>
           <div class="item-actions">
@@ -67,19 +94,19 @@
       <h2>Edit Item</h2>
       <div class="modal-content">
         <label for="editItemName">Name:</label>
-        <input type="text" id="editItemName" v-model="editedItem.Item_Name" />
+        <input type="text" id="editItemName" v-model="editedItem.item_name" />
 
         <label for="editUnitPrice">Price:</label>
-        <input type="number" id="editUnitPrice" v-model.number="editedItem.Unit_Price" />
+        <input type="number" id="editUnitPrice" v-model.number="editedItem.unit_price" />
 
         <label for="editUnits">Units:</label>
-        <input type="number" id="editUnits" v-model.number="editedItem.Units" />
+        <input type="number" id="editUnits" v-model.number="editedItem.units" />
 
         <label for="editStoreBranch">Store Branch:</label>
-        <input type="text" id="editStoreBranch" v-model="editedItem.Store_Branch" />
+        <input type="text" id="editStoreBranch" v-model="editedItem.store_branch" />
 
         <label for="editWeight">Weight:</label>
-        <input type="number" id="editWeight" v-model.number="editedItem.Weight" />
+        <input type="number" id="editWeight" v-model.number="editedItem.weight" />
       </div>
       <div class="modal-actions">
         <button @click="saveEditedItem" class="save-button">Save</button>
@@ -94,13 +121,18 @@ import { ref, onMounted } from 'vue'
 import { toRaw } from 'vue'
 
 interface Item {
-  Item_ID: number
-  Item_Name: string
-  Unit_Price: number
-  Units: number
-  Store_Branch: string
-  Weight: number
-  Updated_At: string
+  item_id: number
+  item_name: string
+  unit_price: number
+  units: number
+  store_branch: string
+  weight: number
+  category: string | null
+  subcategory: string | null
+  is_organic: boolean | null
+  brand_name: string | null
+  barcode: string | null
+  updated_at: string
 }
 
 const items = ref<Item[]>([])
@@ -108,36 +140,51 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const showModal = ref(false)
 const editedItem = ref<Item>({
-  Item_ID: 0,
-  Item_Name: '',
-  Unit_Price: 0,
-  Units: 0,
-  Store_Branch: '',
-  Weight: 0,
-  Updated_At: '',
+  item_id: 0,
+  item_name: '',
+  unit_price: 0,
+  units: 0,
+  store_branch: '',
+  weight: 0,
+  category: null,
+  subcategory: null,
+  is_organic: null,
+  brand_name: null,
+  barcode: null,
+  updated_at: '',
 })
 
 const showAddItemModal = ref(false)
 const newItem = ref<Item>({
-  Item_ID: 0,
-  Item_Name: '',
-  Unit_Price: 0,
-  Units: 0,
-  Store_Branch: '',
-  Weight: 0,
-  Updated_At: new Date().toISOString(),
+  item_id: 0,
+  item_name: '',
+  unit_price: 0,
+  units: 0,
+  store_branch: '',
+  weight: 0,
+  category: null,
+  subcategory: null,
+  is_organic: null,
+  brand_name: null,
+  barcode: null,
+  updated_at: new Date().toISOString(),
 })
 
 const openAddItemModal = () => {
   showAddItemModal.value = true
   newItem.value = {
-    Item_ID: 0,
-    Item_Name: '',
-    Unit_Price: 0,
-    Units: 0,
-    Store_Branch: '',
-    Weight: 0,
-    Updated_At: new Date().toISOString(),
+    item_id: 0,
+    item_name: '',
+    unit_price: 0,
+    units: 0,
+    store_branch: '',
+    weight: 0,
+    category: null,
+    subcategory: null,
+    is_organic: null,
+    brand_name: null,
+    barcode: null,
+    updated_at: new Date().toISOString(),
   }
 }
 
@@ -171,28 +218,31 @@ const fetchItems = async () => {
     loading.value = true
     error.value = null
 
+    console.log('Attempting to fetch items from server...')
     const response = await fetch('http://localhost:8080/api/items', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     })
 
     if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status}`)
-      throw new Error(`HTTP error! status: ${response.status}`)
+      const errorText = await response.text()
+      console.error('Server responded with error:', response.status, errorText)
+      throw new Error(`Server error: ${response.status} - ${errorText || response.statusText}`)
     }
 
     const textData = await response.text()
-    console.log('Data:', textData) // Log the raw data
+    console.log('Raw server response:', textData)
+
     try {
       items.value = JSON.parse(textData)
-      console.log('Parsed items:', items.value) // Log the parsed items
+      console.log('Successfully parsed items:', items.value)
     } catch (parseError) {
-      console.error('Response was not JSON:', textData)
-      throw new Error('Server response was not in JSON format')
+      console.error('Failed to parse server response:', parseError)
+      throw new Error('Invalid server response format')
     }
   } catch (e) {
-    console.error('Fetch error:', e)
-    error.value = e instanceof Error ? e.message : 'An unknown error occurred'
+    console.error('Fetch error details:', e)
+    error.value = e instanceof Error ? e.message : 'Network connection failed'
   } finally {
     loading.value = false
   }
@@ -286,17 +336,22 @@ const saveEditedItem = async () => {
     const responseData = await response.json()
 
     items.value = items.value.map((item) =>
-      item.Item_ID === editedItem.value.Item_ID ? { ...item, ...editedItem.value } : item,
+      item.item_id === editedItem.value.item_id ? { ...item, ...editedItem.value } : item,
     )
 
     console.log(
-      `Item with ID ${editedItem.value.Item_ID} updated successfully:`,
+      `Item with ID ${editedItem.value.item_id} updated successfully:`,
       responseData.message,
     )
     showModal.value = false
   } catch (error) {
     console.error('Failed to update item:', error)
   }
+}
+
+// Helper function to handle nullable strings
+const getNullableString = (value: string | null): string => {
+  return value ?? '-'
 }
 </script>
 

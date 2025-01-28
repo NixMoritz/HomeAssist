@@ -2,8 +2,11 @@ package HomeAssist
 
 const (
 	InsertItemQuery = `
-		INSERT INTO items (item_name, unit_price, units, store_branch, weight)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO items (
+			item_name, unit_price, units, store_branch, weight,
+			category, subcategory, is_organic, brand_name, barcode, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING item_id
 	`
 	InsertStoreQuery = `
 		INSERT INTO stores (unique_uid, store_branch, store_name, store_address, store_phone)
@@ -26,8 +29,11 @@ const (
 		`
 
 	GetAllItems = `
-		SELECT * FROM items
-		`
+		SELECT item_id, item_name, unit_price, units, store_branch, weight, 
+			   category, subcategory, is_organic, brand_name, barcode, updated_at 
+		FROM items
+		ORDER BY item_id
+	`
 
 	GetStore = `
 		SELECT * FROM stores
@@ -82,8 +88,14 @@ const (
 			unit_price = $2,
 			units = $3,
 			store_branch = $4,
-			weight = $5
-		WHERE item_id = $6
+			weight = $5,
+			category = $6,
+			subcategory = $7,
+			is_organic = $8,
+			brand_name = $9,
+			barcode = $10,
+			updated_at = $11
+		WHERE item_id = $12
 	`
 
 	UpdateStore = `
