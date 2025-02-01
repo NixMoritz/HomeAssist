@@ -6,7 +6,7 @@
     <!-- Error State -->
     <div v-else-if="error" class="error-state">
       <p>Error loading items: {{ error }}</p>
-      <button @click="retryFetchItems" class="retry-button">Retry</button>
+      <button @click="() => retryFetchItems()" class="retry-button">Retry</button>
     </div>
 
     <!-- Add Item Button -->

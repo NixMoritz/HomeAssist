@@ -46,7 +46,7 @@ func getStore(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	store, err := database.GetStore(storeID, db)
+	store, err := database.GetStoreByID(storeID, db)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			respondWithError(w, http.StatusNotFound, err.Error())
@@ -61,11 +61,7 @@ func getStore(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 func getAllStores(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	stores, err := database.GetAllStores(db)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			respondWithError(w, http.StatusNotFound, err.Error())
-		} else {
-			respondWithError(w, http.StatusInternalServerError, "Internal server error")
-		}
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	respondWithJSON(w, http.StatusOK, stores)

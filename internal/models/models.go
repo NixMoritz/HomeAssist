@@ -5,15 +5,15 @@ import (
 )
 
 type Store struct {
-	Store_ID       int       `json:"store_id"`       // Unique identifier for each store
-	Unique_UID     string    `json:"unique_uid"`     // Unique identifier
-	Store_Branch   string    `json:"store_branch"`   // Chain name (e.g., REWE, Kaufland)
-	Store_Name     string    `json:"store_name"`     // Optional name (e.g., Edeka Special)
-	Store_Address  string    `json:"store_address"`  // Address of the store
-	Store_Phone    string    `json:"store_phone"`    // Contact phone number for the store
-	Store_Type     string    `json:"store_type"`     // Added: e.g., 'Supermarket', 'Restaurant'
-	Store_Category string    `json:"store_category"` // Added: e.g., 'Grocery', 'Fast Food'
-	Updated_At     time.Time `json:"updated_at"`     // Timestamp for last update
+	Store_ID       int       `json:"store_id"`                 // Unique identifier for each store
+	Unique_UID     string    `json:"unique_uid,omitempty"`     // Unique identifier
+	Store_Branch   string    `json:"store_branch"`             // Chain name (e.g., REWE, Kaufland)
+	Store_Name     string    `json:"store_name"`               // Optional name (e.g., Edeka Special)
+	Store_Address  string    `json:"store_address"`            // Address of the store
+	Store_Phone    string    `json:"store_phone"`              // Contact phone number for the store
+	Store_Type     string    `json:"store_type,omitempty"`     // Make optional
+	Store_Category string    `json:"store_category,omitempty"` // Make optional
+	Updated_At     time.Time `json:"updated_at"`               // Timestamp for last update
 }
 
 type Item struct {
@@ -32,22 +32,24 @@ type Item struct {
 }
 
 type Receipt struct {
-	Receipt_ID            int       `json:"receipt_id"`            // Unique identifier for each receipt
-	Store_ID              int       `json:"store_id"`              // Foreign key linking to the Stores table
-	Date_Issued           time.Time `json:"date_issued"`           // Date when the receipt was issued
-	Time_Issued           time.Time `json:"time_issued"`           // Added
-	Total_Amount          float64   `json:"total_amount"`          // Total amount of the receipt
-	Payment_Method        string    `json:"payment_method"`        // Payment method used (e.g., Cash, Credit Card)
-	Total_Discount_Amount float64   `json:"total_discount_amount"` // Discount amount applied, if any
-	Net_Amount            float64   `json:"net_amount"`            // Final amount after applying tax and discount
-	Tax_Amount            float64   `json:"tax_amount"`            // Added
-	Receipt_Type          string    `json:"receipt_type"`          // Added
-	Loyalty_Card_Number   string    `json:"loyalty_card_number"`   // Added
-	Cashier_Name          string    `json:"cashier_name"`          // Added
-	Receipt_Number        string    `json:"receipt_number"`        // Added
-	Notes                 string    `json:"notes"`                 // Additional notes or comments
-	Image_URL             string    `json:"image_url"`             // Added
-	Updated_At            time.Time `json:"updated_at"`            // Timestamp for last update
+	Receipt_ID            int       `json:"receipt_id"`
+	Store_ID              int       `json:"store_id"`
+	Store_Name            string    `json:"store_name"`
+	Store_Branch          string    `json:"store_branch"`
+	Store_Address         string    `json:"store_address"`
+	Date_Issued           time.Time `json:"date_issued"` // This will store both date and time
+	Total_Amount          float64   `json:"total_amount"`
+	Payment_Method        string    `json:"payment_method"`
+	Total_Discount_Amount float64   `json:"total_discount_amount"`
+	Net_Amount            float64   `json:"net_amount"`
+	Tax_Amount            float64   `json:"tax_amount"`
+	Receipt_Type          string    `json:"receipt_type"`
+	Loyalty_Card_Number   string    `json:"loyalty_card_number"`
+	Cashier_Name          string    `json:"cashier_name"`
+	Receipt_Number        string    `json:"receipt_number"`
+	Notes                 string    `json:"notes"`
+	Image_URL             string    `json:"image_url"`
+	Updated_At            time.Time `json:"updated_at"`
 }
 
 type ReceiptItem struct {

@@ -26,23 +26,22 @@ CREATE TABLE IF NOT EXISTS ITEMS (
 );
 
 CREATE TABLE IF NOT EXISTS RECEIPTS (
-    RECEIPT_ID SERIAL PRIMARY KEY, -- Unique identifier for each receipt
-    STORE_ID INT NOT NULL, -- Foreign key linking to the Vendors table
-    DATE_ISSUED DATE NOT NULL, -- Date when the receipt was issued
-    TIME_ISSUED TIME, -- Added: Time of purchase
-    TOTAL_AMOUNT DECIMAL(10, 2) NOT NULL, -- Total amount of the receipt
-    PAYMENT_METHOD VARCHAR(50), -- Payment method used (e.g., Cash, Credit Card)
-    TOTAL_DISCOUNT_AMOUNT DECIMAL(10, 2), -- Discount amount applied, if any
-    NET_AMOUNT DECIMAL(10, 2) NOT NULL, -- Final amount after applying tax and discount
-    TAX_AMOUNT DECIMAL(10, 2), -- Added: Total tax amount
-    RECEIPT_TYPE VARCHAR(50), -- Added: e.g., 'Grocery', 'Restaurant', 'Return'
-    LOYALTY_CARD_NUMBER VARCHAR(50), -- Added: Store loyalty card used
-    CASHIER_NAME VARCHAR(100), -- Added: Cashier identification
-    RECEIPT_NUMBER VARCHAR(50), -- Added: Store's receipt number
-    NOTES TEXT, -- Additional notes or comments
-    IMAGE_URL TEXT, -- Added: URL to receipt image/scan
-    UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp for last update
-    FOREIGN KEY (STORE_ID) REFERENCES STORES (STORE_ID) -- Establish relationship with Stores table
+    RECEIPT_ID SERIAL PRIMARY KEY,
+    STORE_ID INT NOT NULL,
+    DATE_ISSUED TIMESTAMP NOT NULL, -- Changed to TIMESTAMP to store both date and time
+    TOTAL_AMOUNT DECIMAL(10, 2) NOT NULL,
+    PAYMENT_METHOD VARCHAR(50),
+    TOTAL_DISCOUNT_AMOUNT DECIMAL(10, 2),
+    NET_AMOUNT DECIMAL(10, 2) NOT NULL,
+    TAX_AMOUNT DECIMAL(10, 2),
+    RECEIPT_TYPE VARCHAR(50),
+    LOYALTY_CARD_NUMBER VARCHAR(50),
+    CASHIER_NAME VARCHAR(100),
+    RECEIPT_NUMBER VARCHAR(50),
+    NOTES TEXT,
+    IMAGE_URL TEXT,
+    UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (STORE_ID) REFERENCES STORES (STORE_ID)
 );
 
 CREATE TABLE IF NOT EXISTS RECEIPT_ITEMS (

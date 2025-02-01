@@ -20,7 +20,7 @@ func main() {
 	}
 	defer db.Close()
 
-	migration := false
+	migration := true
 
 	if migration {
 		database.Migration(db)
