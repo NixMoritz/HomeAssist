@@ -9,316 +9,87 @@
       <button @click="() => retryFetchReceipts()" class="retry-button">Retry</button>
     </div>
 
-    <!-- Add Receipt Button -->
-    <div class="add-receipt-container">
+    <!-- Header with Add Button -->
+    <div class="page-header">
       <button @click="openAddReceiptModal" class="add-receipt-button">Add Receipt</button>
     </div>
 
-    <!-- Add Receipt Modal -->
-    <div v-if="showAddReceiptModal" class="modal-overlay">
-      <div class="modal">
-        <h2>Add New Receipt</h2>
-        <div class="modal-content">
-          <div class="store-selection">
-            <label>Selected Store:</label>
-            <div class="selected-store">
-              <span v-if="newReceipt.store_id">
-                {{ newReceipt.store_name }} - {{ newReceipt.store_branch }}
-              </span>
-              <span v-else>No store selected</span>
+    <ReceiptModal
+      v-if="showModal || showAddReceiptModal"
+      :receipt="showModal ? editedReceipt : newReceipt"
+      :isEdit="showModal"
+      @save="showModal ? saveEditedReceipt() : addNewReceipt()"
+      @close="showModal ? closeModal() : closeAddReceiptModal()"
+      @openStoreSelect="openStoreSelection(showModal)"
+    />
+
+    <!-- Main Content -->
+    <div class="content-wrapper">
+      <!-- Receipts Grid -->
+      <div class="receipts-grid">
+        <div v-for="receipt in receipts" :key="receipt.receipt_id" class="receipt-card">
+          <div class="receipt-content">
+            <h3 class="receipt-title">Receipt #{{ receipt.receipt_id }}</h3>
+            <div class="receipt-details">
+              <p><strong>Date:</strong> {{ formatDate(receipt.date_issued) }}</p>
+              <p>
+                <strong>Store:</strong>
+                {{
+                  receipt.store_id
+                    ? `${receipt.store_name} (${receipt.store_branch})`
+                    : 'No store selected'
+                }}
+              </p>
+              <p>
+                <strong>Address:</strong>
+                {{ receipt.store_id ? receipt.store_address : 'No address available' }}
+              </p>
+              <p><strong>Total Amount:</strong> {{ formatPrice(receipt.total_amount) }}</p>
+              <p><strong>Discount:</strong> {{ formatPrice(receipt.total_discount_amount) }}</p>
+              <p><strong>Net Amount:</strong> {{ formatPrice(receipt.net_amount) }}</p>
             </div>
-            <button @click="openStoreSelection(false)" class="select-store-button">
-              Select Store
-            </button>
+            <div class="receipt-image" v-if="receipt.image_url">
+              <img :src="receipt.image_url" alt="Receipt Image" />
+            </div>
+            <div class="receipt-actions">
+              <button @click="editReceipt(receipt)" class="edit-button">Edit</button>
+              <button @click="deleteReceipt(receipt.receipt_id)" class="delete-button">
+                Delete
+              </button>
+            </div>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="date">Date and Time:</label>
-              <input type="datetime-local" id="datetime" v-model="newReceipt.date_issued" />
-            </div>
-
-            <div class="form-group">
-              <label for="totalAmount">Total Amount:</label>
-              <input
-                type="number"
-                id="totalAmount"
-                v-model.number="newReceipt.total_amount"
-                step="0.01"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="paymentMethod">Payment Method:</label>
-              <select id="paymentMethod" v-model="newReceipt.payment_method">
-                <option value="CASH">Cash</option>
-                <option value="CARD">Card</option>
-                <option value="ONLINE">Online</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="discountAmount">Discount Amount:</label>
-              <input
-                type="number"
-                id="discountAmount"
-                v-model.number="newReceipt.total_discount_amount"
-                step="0.01"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="netAmount">Net Amount:</label>
-              <input
-                type="number"
-                id="netAmount"
-                v-model.number="newReceipt.net_amount"
-                step="0.01"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="taxAmount">Tax Amount:</label>
-              <input
-                type="number"
-                id="taxAmount"
-                v-model.number="newReceipt.tax_amount"
-                step="0.01"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="receiptType">Receipt Type:</label>
-              <select id="receiptType" v-model="newReceipt.receipt_type">
-                <option value="PURCHASE">Purchase</option>
-                <option value="RETURN">Return</option>
-                <option value="REFUND">Refund</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="loyaltyCard">Loyalty Card Number:</label>
-              <input type="text" id="loyaltyCard" v-model="newReceipt.loyalty_card_number" />
-            </div>
-
-            <div class="form-group">
-              <label for="cashierName">Cashier Name:</label>
-              <input type="text" id="cashierName" v-model="newReceipt.cashier_name" />
-            </div>
-
-            <div class="form-group">
-              <label for="receiptNumber">Receipt Number:</label>
-              <input type="text" id="receiptNumber" v-model="newReceipt.receipt_number" />
-            </div>
-
-            <div class="form-group full-width">
-              <label for="notes">Notes:</label>
-              <textarea id="notes" v-model="newReceipt.notes" rows="3"></textarea>
-            </div>
-
-            <div class="form-group full-width">
-              <label for="imageUrl">Receipt Image URL:</label>
-              <input type="text" id="imageUrl" v-model="newReceipt.image_url" />
+    <!-- Store Selection Modal -->
+    <div v-if="showStoreSelectionModal" class="modal-overlay">
+      <div class="modal store-list-modal">
+        <h2>Select Store</h2>
+        <div class="store-list">
+          <div class="store-list-header">
+            <div class="store-name-col">Store Name</div>
+            <div class="store-branch-col">Branch</div>
+            <div class="store-address-col">Address</div>
+            <div class="store-phone-col">Phone</div>
+          </div>
+          <div class="store-list-body">
+            <div
+              v-for="store in stores"
+              :key="store.store_id"
+              class="store-list-item"
+              @click="selectStore(store)"
+            >
+              <div class="store-name-col">{{ store.store_name }}</div>
+              <div class="store-branch-col">{{ store.store_branch }}</div>
+              <div class="store-address-col">{{ store.store_address }}</div>
+              <div class="store-phone-col">{{ store.store_phone }}</div>
             </div>
           </div>
         </div>
         <div class="modal-actions">
-          <button @click="addNewReceipt" class="save-button">Add</button>
-          <button @click="closeAddReceiptModal" class="cancel-button">Cancel</button>
+          <button @click="showStoreSelectionModal = false" class="cancel-button">Cancel</button>
         </div>
-      </div>
-    </div>
-
-    <!-- Receipts Grid -->
-    <div v-else class="receipts-grid">
-      <div v-for="receipt in receipts" :key="receipt.receipt_id" class="receipt-card">
-        <div class="receipt-content">
-          <h3 class="receipt-title">Receipt #{{ receipt.receipt_id }}</h3>
-          <div class="receipt-details">
-            <p>
-              <strong>Date:</strong> {{ formatDate(receipt.date_issued) }}
-              {{ formatTime(receipt.time_issued) }}
-            </p>
-            <p>
-              <strong>Store:</strong>
-              {{
-                receipt.store_id
-                  ? `${receipt.store_name} (${receipt.store_branch})`
-                  : 'No store selected'
-              }}
-            </p>
-            <p>
-              <strong>Address:</strong>
-              {{ receipt.store_id ? receipt.store_address : 'No address available' }}
-            </p>
-            <p><strong>Total Amount:</strong> {{ formatPrice(receipt.total_amount) }}</p>
-            <p><strong>Discount:</strong> {{ formatPrice(receipt.total_discount_amount) }}</p>
-            <p><strong>Net Amount:</strong> {{ formatPrice(receipt.net_amount) }}</p>
-          </div>
-          <div class="receipt-image" v-if="receipt.image_url">
-            <img :src="receipt.image_url" alt="Receipt Image" />
-          </div>
-          <div class="receipt-actions">
-            <button @click="editReceipt(receipt)" class="edit-button">Edit</button>
-            <button @click="deleteReceipt(receipt.receipt_id)" class="delete-button">Delete</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Edit Modal -->
-  <div v-if="showModal" class="modal-overlay">
-    <div class="modal">
-      <h2>Edit Receipt</h2>
-      <div class="modal-content">
-        <div class="store-selection">
-          <label>Selected Store:</label>
-          <div class="selected-store">
-            <span v-if="editedReceipt.store_id">
-              {{ editedReceipt.store_name }} - {{ editedReceipt.store_branch }}
-            </span>
-            <span v-else>No store selected</span>
-          </div>
-          <button @click="openStoreSelection(true)" class="select-store-button">
-            Select Store
-          </button>
-        </div>
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="editDate">Date:</label>
-            <input type="date" id="editDate" v-model="editedReceipt.date_issued" />
-          </div>
-
-          <div class="form-group">
-            <label for="editTime">Time:</label>
-            <input
-              type="time"
-              id="editTime"
-              :value="formattedTime"
-              @input="(e) => updateTime((e.target as HTMLInputElement).value)"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="editTotalAmount">Total Amount:</label>
-            <input
-              type="number"
-              id="editTotalAmount"
-              v-model.number="editedReceipt.total_amount"
-              step="0.01"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="editPaymentMethod">Payment Method:</label>
-            <select id="editPaymentMethod" v-model="editedReceipt.payment_method">
-              <option value="CASH">Cash</option>
-              <option value="CARD">Card</option>
-              <option value="ONLINE">Online</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="editDiscountAmount">Discount Amount:</label>
-            <input
-              type="number"
-              id="editDiscountAmount"
-              v-model.number="editedReceipt.total_discount_amount"
-              step="0.01"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="editNetAmount">Net Amount:</label>
-            <input
-              type="number"
-              id="editNetAmount"
-              v-model.number="editedReceipt.net_amount"
-              step="0.01"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="editTaxAmount">Tax Amount:</label>
-            <input
-              type="number"
-              id="editTaxAmount"
-              v-model.number="editedReceipt.tax_amount"
-              step="0.01"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="editReceiptType">Receipt Type:</label>
-            <select id="editReceiptType" v-model="editedReceipt.receipt_type">
-              <option value="PURCHASE">Purchase</option>
-              <option value="RETURN">Return</option>
-              <option value="REFUND">Refund</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="editLoyaltyCard">Loyalty Card Number:</label>
-            <input type="text" id="editLoyaltyCard" v-model="editedReceipt.loyalty_card_number" />
-          </div>
-
-          <div class="form-group">
-            <label for="editCashierName">Cashier Name:</label>
-            <input type="text" id="editCashierName" v-model="editedReceipt.cashier_name" />
-          </div>
-
-          <div class="form-group">
-            <label for="editReceiptNumber">Receipt Number:</label>
-            <input type="text" id="editReceiptNumber" v-model="editedReceipt.receipt_number" />
-          </div>
-
-          <div class="form-group full-width">
-            <label for="editNotes">Notes:</label>
-            <textarea id="editNotes" v-model="editedReceipt.notes" rows="3"></textarea>
-          </div>
-
-          <div class="form-group full-width">
-            <label for="editImageUrl">Receipt Image URL:</label>
-            <input type="text" id="editImageUrl" v-model="editedReceipt.image_url" />
-          </div>
-        </div>
-      </div>
-      <div class="modal-actions">
-        <button @click="saveEditedReceipt" class="save-button">Save</button>
-        <button @click="closeModal" class="cancel-button">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Store Selection Modal -->
-  <div v-if="showStoreSelectionModal" class="modal-overlay">
-    <div class="modal store-list-modal">
-      <h2>Select Store</h2>
-      <div class="store-list">
-        <div class="store-list-header">
-          <div class="store-name-col">Store Name</div>
-          <div class="store-branch-col">Branch</div>
-          <div class="store-address-col">Address</div>
-          <div class="store-phone-col">Phone</div>
-        </div>
-        <div class="store-list-body">
-          <div
-            v-for="store in stores"
-            :key="store.store_id"
-            class="store-list-item"
-            @click="selectStore(store)"
-          >
-            <div class="store-name-col">{{ store.store_name }}</div>
-            <div class="store-branch-col">{{ store.store_branch }}</div>
-            <div class="store-address-col">{{ store.store_address }}</div>
-            <div class="store-phone-col">{{ store.store_phone }}</div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-actions">
-        <button @click="showStoreSelectionModal = false" class="cancel-button">Cancel</button>
       </div>
     </div>
   </div>
@@ -327,6 +98,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { toRaw } from 'vue'
+import ReceiptModal from './ReceiptModal.vue'
 
 interface Receipt {
   receipt_id: number
@@ -335,7 +107,6 @@ interface Receipt {
   store_branch: string
   store_address: string
   date_issued: string
-  time_issued: string
   total_amount: number
   payment_method: string
   total_discount_amount: number
@@ -374,7 +145,6 @@ const editedReceipt = ref<Receipt>({
   store_branch: '',
   store_address: '',
   date_issued: '',
-  time_issued: '',
   total_amount: 0,
   payment_method: 'CASH',
   total_discount_amount: 0,
@@ -587,12 +357,6 @@ const editReceipt = (receipt: Receipt) => {
       .toISOString()
       .split('T')[0]
   }
-  if (editedReceipt.value.time_issued) {
-    editedReceipt.value.time_issued = new Date(editedReceipt.value.time_issued)
-      .toISOString()
-      .split('T')[1]
-      .slice(0, 5)
-  }
 
   // Ensure store information is properly set
   if (editedReceipt.value.store_id) {
@@ -608,23 +372,11 @@ const editReceipt = (receipt: Receipt) => {
   showModal.value = true
 }
 
-const updateTime = (time: string) => {
-  if (time) {
-    editedReceipt.value.time_issued = time
-  }
-}
-
 const saveEditedReceipt = async () => {
   try {
-    // Combine date and time for the backend format
-    const dateStr = editedReceipt.value.date_issued
-    const timeStr = editedReceipt.value.time_issued
-    const combinedDateTime = `${dateStr}T${timeStr}`
-
     const receiptData = {
       ...toRaw(editedReceipt.value),
-      date_issued: combinedDateTime,
-      time_issued: combinedDateTime,
+      date_issued: editedReceipt.value.date_issued, // Already in correct format YYYY-MM-DDTHH:mm
     }
 
     const response = await fetch('http://localhost:8080/api/receipts/update', {
@@ -719,12 +471,6 @@ const selectStore = (store: Store) => {
   console.log('Updated receipt:', receipt)
 }
 
-// Add computed property for formatted time
-const formattedTime = computed(() => {
-  const time = showModal.value ? editedReceipt.value.time_issued : newReceipt.value.time_issued
-  return time.split('T')[1]?.slice(0, 5) || ''
-})
-
 onMounted(async () => {
   console.log('Component mounted, loading data...')
   try {
@@ -738,77 +484,154 @@ onMounted(async () => {
 
 <style scoped>
 .receipts-container {
+  width: 100%;
+  min-height: 100vh;
   padding: 20px;
-  max-width: 1200px;
+  margin-top: 64px; /* Add margin to account for topbar height */
+}
+
+.page-header {
+  width: 65%;
+  margin: 0 auto 20px;
+  display: flex;
+  justify-content: flex-end;
+  position: relative;
+  z-index: 1; /* Ensure it's above content but below topbar */
+}
+
+.content-wrapper {
+  width: 65%;
   margin: 0 auto;
 }
 
-.loading-state,
-.error-state {
-  text-align: center;
-  padding: 40px;
-  font-size: 1.1rem;
-  color: var(--color-text);
+.add-receipt-button {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
 }
 
-.error-state p {
-  margin-bottom: 1rem;
-  color: #dc2626;
+.add-receipt-button:hover {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .page-header,
+  .content-wrapper {
+    width: 80%;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header,
+  .content-wrapper {
+    width: 90%;
+  }
 }
 
 .receipts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
   padding: 20px 0;
 }
 
 .receipt-card {
-  background: var(--color-background-soft);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
   overflow: hidden;
-  transition: transform 0.2s ease-in-out;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .receipt-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .receipt-content {
-  padding: 15px;
+  padding: 20px;
 }
 
 .receipt-title {
-  margin: 0 0 10px 0;
-  font-size: 1.2rem;
+  margin: 0 0 16px 0;
+  font-size: 1.3rem;
   color: var(--color-heading);
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+}
+
+.receipt-details {
+  display: grid;
+  gap: 12px;
 }
 
 .receipt-details p {
-  margin: 8px 0;
-  font-size: 0.9rem;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
-.receipt-image {
-  margin: 10px 0;
-  text-align: center;
-}
-
-.receipt-image img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
+.receipt-details strong {
+  color: var(--color-heading);
+  font-weight: 600;
 }
 
 .receipt-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.edit-button,
+.delete-button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.edit-button {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.delete-button {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.edit-button:hover {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+.delete-button:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.receipt-image {
+  margin: 16px -20px -20px;
+  height: 200px;
+  overflow: hidden;
+}
+
+.receipt-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .modal-overlay {
@@ -845,39 +668,6 @@ onMounted(async () => {
   gap: 10px;
 }
 
-.add-receipt-container {
-  text-align: right;
-  margin-bottom: 20px;
-}
-
-button {
-  padding: 8px 16px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.add-receipt-button {
-  background-color: #2563eb;
-  color: white;
-}
-
-.edit-button {
-  background-color: #4ade80;
-  color: white;
-}
-
-.delete-button {
-  background-color: #dc2626;
-  color: white;
-}
-
-.save-button {
-  background-color: #4ade80;
-  color: white;
-}
-
 .cancel-button {
   background-color: #6b7280;
   color: white;
@@ -895,12 +685,6 @@ select {
 label {
   font-weight: bold;
   margin-bottom: 4px;
-}
-
-@media (max-width: 768px) {
-  .receipts-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .debug-info {
@@ -1079,5 +863,121 @@ input[type='number'] {
   justify-content: flex-end;
   gap: 1rem;
   background: var(--color-background);
+}
+
+/* Common button styles */
+.button-base {
+  background-color: #ffffff;
+  border: 1px solid #222222;
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: #222222;
+  cursor: pointer;
+  display: inline-block;
+  font-family:
+    Circular,
+    -apple-system,
+    BlinkMacSystemFont,
+    Roboto,
+    'Helvetica Neue',
+    sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 20px;
+  margin: 0;
+  outline: none;
+  padding: 13px 23px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  touch-action: manipulation;
+  transition:
+    box-shadow 0.2s,
+    -ms-transform 0.1s,
+    -webkit-transform 0.1s,
+    transform 0.1s;
+  user-select: none;
+  -webkit-user-select: none;
+  width: auto;
+}
+
+.button-base:focus-visible {
+  box-shadow:
+    #222222 0 0 0 2px,
+    rgba(255, 255, 255, 0.8) 0 0 0 4px;
+  transition: box-shadow 0.2s;
+}
+
+.button-base:active {
+  background-color: #f7f7f7;
+  border-color: #000000;
+  transform: scale(0.96);
+}
+
+.button-base:disabled {
+  border-color: #dddddd;
+  color: #dddddd;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* Apply base styles to all buttons */
+.add-receipt-button,
+.edit-button,
+.delete-button,
+.select-store-button {
+  @extend .button-base;
+}
+
+/* Custom colors for different button types */
+.add-receipt-button {
+  background-color: #4caf50;
+  border-color: #45a049;
+  color: white;
+}
+
+.edit-button {
+  background-color: #2196f3;
+  border-color: #1e88e5;
+  color: white;
+}
+
+.delete-button {
+  background-color: #f44336;
+  border-color: #e53935;
+  color: white;
+}
+
+.select-store-button {
+  background-color: #9c27b0;
+  border-color: #8e24aa;
+  color: white;
+  width: 100%;
+}
+
+/* Hover states */
+.add-receipt-button:hover,
+.edit-button:hover,
+.delete-button:hover,
+.select-store-button:hover {
+  opacity: 0.9;
+}
+
+/* Update receipt actions container */
+.receipt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .button-base {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
 }
 </style>

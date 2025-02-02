@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ReceiptGrid from '../components/ReceiptGrid.vue'
+import ReceiptGrid from '../components/Receipts/ReceiptGrid.vue'
 </script>
 
 <template>

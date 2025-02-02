@@ -23,11 +23,11 @@ type Item struct {
 	Units        float64   `json:"units"`
 	Store_Branch string    `json:"store_branch"`
 	Weight       float64   `json:"weight"`
-	Category     *string   `json:"category"`    // Using pointer for nullable string
-	Subcategory  *string   `json:"subcategory"` // Using pointer for nullable string
-	Is_Organic   *bool     `json:"is_organic"`  // Using pointer for nullable boolean
-	Brand_Name   *string   `json:"brand_name"`  // Using pointer for nullable string
-	Barcode      *string   `json:"barcode"`     // Using pointer for nullable string
+	Category     *string   `json:"category"`
+	Subcategory  *string   `json:"subcategory"`
+	Is_Organic   *bool     `json:"is_organic"`
+	Brand_Name   *string   `json:"brand_name"`
+	Barcode      *string   `json:"barcode"`
 	Updated_At   time.Time `json:"updated_at"`
 }
 

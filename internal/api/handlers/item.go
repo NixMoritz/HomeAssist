@@ -27,44 +27,63 @@ func RegisterItemHandlers(router *mux.Router, db *sql.DB) {
 		putItem(w, r, db)
 	}).Methods(http.MethodPut)
 
+	router.HandleFunc("/api/items/create-batch", func(w http.ResponseWriter, r *http.Request) {
+		putItems(w, r, db)
+	}).Methods(http.MethodPut)
+
 	router.HandleFunc("/api/items", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("item_id") != "" {
 			getItem(w, r, db)
 		} else {
 			getAllItems(w, r, db)
 		}
-
 	}).Methods(http.MethodGet)
 }
 
 func putItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var input models.Items
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+
+	var item models.Item
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		log.Printf("Error decoding item: %v", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	newItem, err := database.AddNewItem(item, db)
+	if err != nil {
+		log.Printf("Error adding item: %v", err)
+		respondWithError(w, http.StatusInternalServerError, "Error adding item")
+		return
+	}
+
+	respondWithJSON(w, http.StatusCreated, newItem)
+}
+
+func putItems(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+
+	var items models.Items
+	if err := json.NewDecoder(r.Body).Decode(&items); err != nil {
 		log.Printf("Error decoding items: %v", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	var addedItems []models.Item
-	for _, item := range input.Items {
-
-		// Validate required fields
-		if item.Item_Name == "" {
-			respondWithError(w, http.StatusBadRequest, "Item name is required")
-			return
-		}
-
-		err := database.AddNewItem(item, db)
+	for i, item := range items.Items {
+		newItem, err := database.AddNewItem(item, db)
 		if err != nil {
-			log.Printf("Error adding item: %v", err)
+			log.Printf("Error adding item %d: %v", i+1, err)
 			respondWithError(w, http.StatusInternalServerError, "Error adding item")
 			return
 		}
 
-		addedItems = append(addedItems, item)
+		addedItems = append(addedItems, newItem)
 	}
 
-	respondWithJSON(w, http.StatusCreated, addedItems)
+	respondWithJSON(w, http.StatusCreated, map[string]interface{}{
+		"message": "Items created successfully",
+		"items":   addedItems,
+	})
 }
 
 func updateItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {

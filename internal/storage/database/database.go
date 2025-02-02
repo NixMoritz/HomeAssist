@@ -60,9 +60,8 @@ func buildConnectionString(cfg config.Database) (string, error) {
 	), nil
 }
 
-func AddNewItem(item models.Item, db *sql.DB) error {
-	var itemID int
-	err := db.QueryRow(
+func AddNewItem(item models.Item, db *sql.DB) (models.Item, error) {
+	_, err := db.Exec(
 		queries.InsertItemQuery,
 		item.Item_Name,
 		item.Unit_Price,
@@ -74,13 +73,13 @@ func AddNewItem(item models.Item, db *sql.DB) error {
 		item.Is_Organic,
 		item.Brand_Name,
 		item.Barcode,
-	).Scan(&itemID)
+	)
 
 	if err != nil {
-		return fmt.Errorf("error inserting item: %w", err)
+		return models.Item{}, fmt.Errorf("error inserting item: %w", err)
 	}
 
-	return nil
+	return item, nil
 }
 
 func GetItem(itemID int, db *sql.DB) (*models.Item, error) {

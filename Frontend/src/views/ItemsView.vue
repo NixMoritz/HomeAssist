@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ItemGrid from '../components/ItemGrid.vue'
+import ItemGrid from '../components/Items/ItemGrid.vue'
 </script>
 
 <template>

@@ -4,9 +4,8 @@ const (
 	InsertItemQuery = `
 		INSERT INTO items (
 			item_name, unit_price, units, store_branch, weight,
-			category, subcategory, is_organic, brand_name, barcode, updated_at
+			category, subcategory, is_organic, brand_name, barcode
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING item_id
 	`
 	InsertStoreQuery = `
 		INSERT INTO stores (unique_uid, store_branch, store_name, store_address, store_phone)
