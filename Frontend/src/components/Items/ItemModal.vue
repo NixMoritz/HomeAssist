@@ -21,7 +21,7 @@
 
             <div class="form-group">
               <label for="unitPrice">Price:</label>
-              <input type="number" id="unitPrice" v-model.number="item.unit_price" step="0.01" />
+              <input type="number" id="unitPrice" v-model.number="item.item_price" step="0.01" />
             </div>
 
             <div class="form-group">

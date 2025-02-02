@@ -41,12 +41,18 @@ func RegisterItemHandlers(router *mux.Router, db *sql.DB) {
 }
 
 func putItem(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-
 	var item models.Item
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		log.Printf("Error decoding item: %v", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
+	}
+
+	// Calculate price per unit
+	if item.Units > 0 {
+		item.Price_Per_Unit = item.Item_Price / item.Units
+	} else {
+		item.Price_Per_Unit = item.Item_Price
 	}
 
 	newItem, err := database.AddNewItem(item, db)

@@ -11,18 +11,19 @@ CREATE TABLE IF NOT EXISTS STORES (
 );
 
 CREATE TABLE IF NOT EXISTS ITEMS (
-    ITEM_ID SERIAL PRIMARY KEY, -- Unique identifier for each item
-    ITEM_NAME VARCHAR(255) NOT NULL, -- Name or description of the item
-    UNIT_PRICE DECIMAL(10, 2) NOT NULL, -- Price per unit of the item
-    UNITS DECIMAL(10, 2) DEFAULT (1), -- Units of the item
-    STORE_BRANCH VARCHAR(255), -- Chain name (e.g., REWE, Kaufland)
-    WEIGHT DECIMAL(10, 2), -- Weight of the item
-    CATEGORY VARCHAR(50), -- Added: e.g., 'Produce', 'Dairy', 'Meat', 'Beverages'
-    SUBCATEGORY VARCHAR(50), -- Added: e.g., 'Fruits', 'Vegetables', 'Cheese'
-    IS_ORGANIC BOOLEAN DEFAULT FALSE, -- Added: Track organic products
-    BRAND_NAME VARCHAR(255), -- Added: Product brand
-    BARCODE VARCHAR(50), -- Added: Product barcode/SKU
-    UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Timestamp for last update
+    ITEM_ID SERIAL PRIMARY KEY,
+    ITEM_NAME VARCHAR(255) NOT NULL,
+    ITEM_PRICE DECIMAL(10, 2) NOT NULL,
+    PRICE_PER_UNIT DECIMAL(10, 2) NOT NULL,
+    UNITS DECIMAL(10, 2) DEFAULT (1),
+    STORE_BRANCH VARCHAR(255),
+    WEIGHT DECIMAL(10, 2),
+    CATEGORY VARCHAR(50),
+    SUBCATEGORY VARCHAR(50),
+    IS_ORGANIC BOOLEAN DEFAULT FALSE,
+    BRAND_NAME VARCHAR(255),
+    BARCODE VARCHAR(50),
+    UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS RECEIPTS (

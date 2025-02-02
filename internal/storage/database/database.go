@@ -64,7 +64,8 @@ func AddNewItem(item models.Item, db *sql.DB) (models.Item, error) {
 	_, err := db.Exec(
 		queries.InsertItemQuery,
 		item.Item_Name,
-		item.Unit_Price,
+		item.Item_Price,
+		item.Price_Per_Unit,
 		item.Units,
 		item.Store_Branch,
 		item.Weight,
@@ -87,7 +88,8 @@ func GetItem(itemID int, db *sql.DB) (*models.Item, error) {
 	err := db.QueryRow(queries.GetItem, itemID).Scan(
 		&item.Item_ID,
 		&item.Item_Name,
-		&item.Unit_Price,
+		&item.Item_Price,
+		&item.Price_Per_Unit,
 		&item.Units,
 		&item.Store_Branch,
 		&item.Weight,
@@ -129,7 +131,8 @@ func UpdateItem(item models.Item, db *sql.DB) error {
 	result, err := db.Exec(
 		queries.UpdateItem,
 		item.Item_Name,
-		item.Unit_Price,
+		item.Item_Price,
+		item.Price_Per_Unit,
 		item.Units,
 		item.Store_Branch,
 		item.Weight,
@@ -171,7 +174,8 @@ func GetAllItems(db *sql.DB) ([]*models.Item, error) {
 		err := rows.Scan(
 			&item.Item_ID,
 			&item.Item_Name,
-			&item.Unit_Price,
+			&item.Item_Price,
+			&item.Price_Per_Unit,
 			&item.Units,
 			&item.Store_Branch,
 			&item.Weight,

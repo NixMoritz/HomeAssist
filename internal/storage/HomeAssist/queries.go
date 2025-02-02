@@ -3,9 +3,9 @@ package HomeAssist
 const (
 	InsertItemQuery = `
 		INSERT INTO items (
-			item_name, unit_price, units, store_branch, weight,
+			item_name, item_price, price_per_unit, units, store_branch, weight,
 			category, subcategory, is_organic, brand_name, barcode
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`
 	InsertStoreQuery = `
 		INSERT INTO stores (unique_uid, store_branch, store_name, store_address, store_phone)
@@ -28,7 +28,7 @@ const (
 		`
 
 	GetAllItems = `
-		SELECT item_id, item_name, unit_price, units, store_branch, weight, 
+		SELECT item_id, item_name, item_price, price_per_unit, units, store_branch, weight, 
 			   category, subcategory, is_organic, brand_name, barcode, updated_at 
 		FROM items
 		ORDER BY item_id
@@ -84,17 +84,18 @@ const (
 	UpdateItem = `
 		UPDATE items
 		SET item_name = $1,
-			unit_price = $2,
-			units = $3,
-			store_branch = $4,
-			weight = $5,
-			category = $6,
-			subcategory = $7,
-			is_organic = $8,
-			brand_name = $9,
-			barcode = $10,
-			updated_at = $11
-		WHERE item_id = $12
+			item_price = $2,
+			price_per_unit = $3,
+			units = $4,
+			store_branch = $5,
+			weight = $6,
+			category = $7,
+			subcategory = $8,
+			is_organic = $9,
+			brand_name = $10,
+			barcode = $11,
+			updated_at = $12
+		WHERE item_id = $13
 	`
 
 	UpdateStore = `

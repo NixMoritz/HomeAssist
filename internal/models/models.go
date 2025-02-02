@@ -17,18 +17,19 @@ type Store struct {
 }
 
 type Item struct {
-	Item_ID      int       `json:"item_id"`
-	Item_Name    string    `json:"item_name"`
-	Unit_Price   float64   `json:"unit_price"`
-	Units        float64   `json:"units"`
-	Store_Branch string    `json:"store_branch"`
-	Weight       float64   `json:"weight"`
-	Category     *string   `json:"category"`
-	Subcategory  *string   `json:"subcategory"`
-	Is_Organic   *bool     `json:"is_organic"`
-	Brand_Name   *string   `json:"brand_name"`
-	Barcode      *string   `json:"barcode"`
-	Updated_At   time.Time `json:"updated_at"`
+	Item_ID        int       `json:"item_id"`
+	Item_Name      string    `json:"item_name"`
+	Item_Price     float64   `json:"item_price"`     // Changed from Unit_Price
+	Price_Per_Unit float64   `json:"price_per_unit"` // New field
+	Units          float64   `json:"units"`
+	Store_Branch   string    `json:"store_branch"`
+	Weight         float64   `json:"weight"`
+	Category       *string   `json:"category"`
+	Subcategory    *string   `json:"subcategory"`
+	Is_Organic     *bool     `json:"is_organic"`
+	Brand_Name     *string   `json:"brand_name"`
+	Barcode        *string   `json:"barcode"`
+	Updated_At     time.Time `json:"updated_at"`
 }
 
 type Receipt struct {

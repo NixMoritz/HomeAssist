@@ -23,7 +23,7 @@
             <h3 class="item-title">{{ item.item_name }}</h3>
             <div class="item-details">
               <p><strong>Category:</strong> {{ getNullableString(item.category) }}</p>
-              <p><strong>Price:</strong> {{ formatPrice(item.unit_price) }}</p>
+              <p><strong>Price:</strong> {{ formatPrice(item.item_price) }}</p>
               <p><strong>Units:</strong> {{ item.units }}</p>
               <p><strong>Weight:</strong> {{ item.weight }}kg</p>
               <p><strong>Brand:</strong> {{ getNullableString(item.brand_name) }}</p>
@@ -57,7 +57,8 @@ import ItemModal from './ItemModal.vue'
 interface Item {
   item_id: number
   item_name: string
-  unit_price: number
+  item_price: number
+  price_per_unit: number
   units: number
   store_branch: string
   weight: number
@@ -76,7 +77,8 @@ const showModal = ref(false)
 const editedItem = ref<Item>({
   item_id: 0,
   item_name: '',
-  unit_price: 0,
+  item_price: 0,
+  price_per_unit: 0,
   units: 0,
   store_branch: '',
   weight: 0,
@@ -92,8 +94,9 @@ const showAddItemModal = ref(false)
 const newItem = ref<Item>({
   item_id: 0,
   item_name: '',
-  unit_price: 0,
-  units: 0,
+  item_price: 0,
+  price_per_unit: 0,
+  units: 1,
   store_branch: '',
   weight: 0,
   category: null,
@@ -109,8 +112,9 @@ const openAddItemModal = () => {
   newItem.value = {
     item_id: 0,
     item_name: '',
-    unit_price: 0,
-    units: 0,
+    item_price: 0,
+    price_per_unit: 0,
+    units: 1,
     store_branch: '',
     weight: 0,
     category: null,

@@ -1,7 +1,8 @@
 export interface Item {
   item_id: number
   item_name: string
-  unit_price: number
+  item_price: number
+  price_per_unit: number
   units: number
   store_branch: string
   weight: number
