@@ -1,24 +1,34 @@
 <template>
   <div class="items-container">
     <!-- Loading State -->
-    <div v-if="loading" class="loading-state">Loading items...</div>
+    <div v-if="loading" class="loading-state" role="status">Loading items...</div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="error-state">
-      <p>Error loading items: {{ error }}</p>
-      <button @click="retryFetchItems()" class="button-base button-primary">Retry</button>
+    <div v-else-if="error" class="error-state" role="alert">
+      <p>Error: {{ error }}</p>
+      <button @click="retryFetchItems()" class="button-base button-primary" :disabled="processing">
+        Retry
+      </button>
     </div>
 
     <!-- Header with Add Button -->
     <div class="page-header">
-      <button @click="openAddItemModal" class="button-base button-primary">Add Item</button>
+      <button @click="openAddItemModal" class="button-base button-primary" :disabled="processing">
+        Add Item
+      </button>
     </div>
 
     <!-- Main Content -->
     <div class="content-wrapper">
       <!-- Items Grid -->
-      <div class="items-grid">
-        <div v-for="item in items" :key="item.item_id" class="item-card">
+      <div class="items-grid" role="grid">
+        <div
+          v-for="item in items"
+          :key="item.item_id"
+          class="item-card"
+          @click="showItemDetails(item)"
+          role="gridcell"
+        >
           <div class="item-content">
             <h3 class="item-title">{{ item.item_name }}</h3>
             <div class="item-details">
@@ -29,8 +39,18 @@
               <p><strong>Brand:</strong> {{ getNullableString(item.brand_name) }}</p>
             </div>
             <div class="item-actions">
-              <button @click="editItem(item)" class="button-base button-secondary">Edit</button>
-              <button @click="deleteItem(item.item_id)" class="button-base button-danger">
+              <button
+                @click.stop="editItem(item)"
+                class="button-base button-secondary"
+                :disabled="processing"
+              >
+                Edit
+              </button>
+              <button
+                @click.stop="deleteItem(item.item_id)"
+                class="button-base button-danger"
+                :disabled="processing"
+              >
                 Delete
               </button>
             </div>
@@ -43,37 +63,34 @@
     v-if="showModal || showAddItemModal"
     :item="showModal ? editedItem : newItem"
     :isEdit="showModal"
+    :processing="processing"
     @save="showModal ? saveEditedItem() : addNewItem()"
     @close="showModal ? closeModal() : closeAddItemModal()"
   />
+  <ItemDetailsModal v-if="showDetailsModal" :item="selectedItem" @close="closeDetailsModal" />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { toRaw } from 'vue'
 import '@/components/styles/ButtonStyles.vue'
 import ItemModal from './ItemModal.vue'
+import ItemDetailsModal from './ItemDetailsModal.vue'
+import type { Item } from '@/types/Item'
 
-interface Item {
-  item_id: number
-  item_name: string
-  item_price: number
-  price_per_unit: number
-  units: number
-  store_branch: string
-  weight: number
-  category: string | null
-  subcategory: string | null
-  is_organic: boolean | null
-  brand_name: string | null
-  barcode: string | null
-  updated_at: string
-}
+// API configuration
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api'
 
+// State management
 const items = ref<Item[]>([])
 const loading = ref(true)
+const processing = ref(false)
 const error = ref<string | null>(null)
 const showModal = ref(false)
+const showAddItemModal = ref(false)
+const showDetailsModal = ref(false)
+const selectedItem = ref<Item | null>(null)
+
+// Item templates
 const editedItem = ref<Item>({
   item_id: 0,
   item_name: '',
@@ -90,22 +107,127 @@ const editedItem = ref<Item>({
   updated_at: '',
 })
 
-const showAddItemModal = ref(false)
 const newItem = ref<Item>({
-  item_id: 0,
-  item_name: '',
-  item_price: 0,
-  price_per_unit: 0,
+  ...editedItem.value,
   units: 1,
-  store_branch: '',
-  weight: 0,
-  category: null,
-  subcategory: null,
-  is_organic: null,
-  brand_name: null,
-  barcode: null,
   updated_at: new Date().toISOString(),
 })
+
+// API calls with improved error handling
+const fetchItems = async () => {
+  try {
+    loading.value = true
+    error.value = null
+    const response = await fetch(`${API_BASE}/items`)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    items.value = await response.json()
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to fetch items'
+    console.error('Fetch error:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+const retryFetchItems = async (retries = 3) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000))
+      await fetchItems()
+      return
+    } catch (e) {
+      if (attempt === retries) throw e
+    }
+  }
+}
+
+const deleteItem = async (itemId: number) => {
+  if (!confirm('Are you sure you want to delete this item?')) return
+
+  try {
+    processing.value = true
+    const response = await fetch(`${API_BASE}/items/delete?item_id=${itemId}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+
+    items.value = items.value.filter((item) => item.item_id !== itemId)
+  } catch (e) {
+    error.value = 'Failed to delete item'
+    console.error('Delete error:', e)
+  } finally {
+    processing.value = false
+  }
+}
+
+const saveEditedItem = async () => {
+  try {
+    processing.value = true
+    const response = await fetch(`${API_BASE}/items/update`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editedItem.value),
+    })
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const updatedItem = await response.json()
+
+    items.value = items.value.map((item) =>
+      item.item_id === editedItem.value.item_id ? updatedItem : item,
+    )
+    showModal.value = false
+  } catch (e) {
+    error.value = 'Failed to update item'
+    console.error('Update error:', e)
+  } finally {
+    processing.value = false
+  }
+}
+
+const addNewItem = async () => {
+  try {
+    processing.value = true
+    const response = await fetch(`${API_BASE}/items/create`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newItem.value),
+    })
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const createdItem = await response.json()
+
+    items.value.push(createdItem)
+    showAddItemModal.value = false
+  } catch (e) {
+    error.value = 'Failed to add item'
+    console.error('Add error:', e)
+  } finally {
+    processing.value = false
+  }
+}
+
+// UI handlers
+const editItem = (item: Item) => {
+  editedItem.value = { ...item }
+  showModal.value = true
+}
+
+const showItemDetails = (item: Item) => {
+  selectedItem.value = item
+  showDetailsModal.value = true
+}
+
+// Utility functions
+const formatPrice = (price: number): string => {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(price)
+}
+
+const getNullableString = (value: string | null | undefined): string => {
+  return value ?? '-'
+}
 
 const openAddItemModal = () => {
   showAddItemModal.value = true
@@ -130,182 +252,30 @@ const closeAddItemModal = () => {
   showAddItemModal.value = false
 }
 
-const addNewItem = async () => {
-  try {
-    const response = await fetch('http://localhost:8080/api/items/create', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newItem.value),
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const createdItem = await response.json()
-    items.value.push(createdItem)
-    console.log(`New item added successfully:`, createdItem)
-    showAddItemModal.value = false
-  } catch (error) {
-    console.error('Failed to add new item:', error)
-  }
+const closeModal = () => {
+  showModal.value = false
 }
 
-const fetchItems = async () => {
-  try {
-    loading.value = true
-    error.value = null
-
-    console.log('Attempting to fetch items from server...')
-    const response = await fetch('http://localhost:8080/api/items', {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Server responded with error:', response.status, errorText)
-      throw new Error(`Server error: ${response.status} - ${errorText || response.statusText}`)
-    }
-
-    const textData = await response.text()
-    console.log('Raw server response:', textData)
-
-    try {
-      items.value = JSON.parse(textData)
-      console.log('Successfully parsed items:', items.value)
-    } catch (parseError) {
-      console.error('Failed to parse server response:', parseError)
-      throw new Error('Invalid server response format')
-    }
-  } catch (e) {
-    console.error('Fetch error details:', e)
-    error.value = e instanceof Error ? e.message : 'Network connection failed'
-  } finally {
-    loading.value = false
-  }
-}
-
-const retryFetchItems = async (retries = 3) => {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      await fetchItems()
-      return // Exit loop on success
-    } catch (e) {
-      console.warn(`Attempt ${attempt} failed:`, e)
-      if (attempt === retries) throw e
-    }
-  }
+const closeDetailsModal = () => {
+  showDetailsModal.value = false
+  selectedItem.value = null
 }
 
 onMounted(() => {
   retryFetchItems()
 })
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('de-DE', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(price)
-}
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleString('de-DE', {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
-}
-
-const deleteItem = async (itemId: number) => {
-  console.log('Item ID to delete:', itemId)
-
-  if (itemId === undefined || itemId === null) {
-    console.error('Invalid item ID')
-    return
-  }
-
-  if (!confirm('Are you sure you want to delete this item?')) {
-    return
-  }
-
-  try {
-    const response = await fetch(`http://localhost:8080/api/items/delete?item_id=${itemId}`, {
-      method: 'DELETE',
-    })
-    if (!response.ok) {
-      console.error(`Failed to delete item, HTTP error! status: ${response.status}`)
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    // Use `toRaw` to get the unwrapped item data
-    items.value = items.value.filter((item) => toRaw(item).item_id !== itemId)
-    console.log(`Item with ID ${itemId} deleted successfully`)
-  } catch (error) {
-    console.error('Failed to delete item:', error)
-  }
-}
-const editItem = (item: Item) => {
-  editedItem.value = { ...item } // Copy item to editedItem for modal
-  showModal.value = true
-}
-const closeModal = () => {
-  showModal.value = false
-}
-
-const saveEditedItem = async () => {
-  try {
-    const response = await fetch(`http://localhost:8080/api/items/update`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editedItem.value),
-    })
-
-    if (!response.ok) {
-      console.error(`Failed to update item, HTTP error! status: ${response.status}`)
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const responseData = await response.json()
-
-    items.value = items.value.map((item) =>
-      item.item_id === editedItem.value.item_id ? { ...item, ...editedItem.value } : item,
-    )
-
-    console.log(
-      `Item with ID ${editedItem.value.item_id} updated successfully:`,
-      responseData.message,
-    )
-    showModal.value = false
-  } catch (error) {
-    console.error('Failed to update item:', error)
-  }
-}
-
-// Helper function to handle nullable strings
-const getNullableString = (value: string | null): string => {
-  return value ?? '-'
-}
 </script>
 
 <style scoped>
 /* General Container Styling */
 .items-container {
-  width: 100vw; /* Full viewport width */
+  width: 100vw;
   min-height: 100vh;
-  padding: 20px 0; /* Remove horizontal padding */
   margin-top: 64px;
   box-sizing: border-box;
-  overflow-x: hidden; /* Prevent horizontal scroll */
-  position: relative; /* Ensure proper positioning */
-  left: 50%; /* Center the container */
-  right: 50%;
-  margin-left: -50vw; /* Negative margin to stretch full width */
+  overflow-x: hidden;
+  position: relative;
+  margin-left: -50vw;
   margin-right: -50vw;
 }
 
@@ -346,6 +316,7 @@ const getNullableString = (value: string | null): string => {
   overflow: hidden;
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
 }
 
 .item-card:hover {
@@ -361,7 +332,7 @@ const getNullableString = (value: string | null): string => {
 
 .item-title {
   margin: 0 0 16px;
-  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  font-size: clamp(1rem, 2vw, 1.2rem);
   color: var(--color-heading);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 12px;

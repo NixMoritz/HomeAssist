@@ -76,6 +76,14 @@ func putItems(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 	var addedItems []models.Item
 	for i, item := range items.Items {
+
+		// Calculate price per unit
+		if item.Units > 0 {
+			item.Price_Per_Unit = item.Item_Price / item.Units
+		} else {
+			item.Price_Per_Unit = item.Item_Price
+		}
+
 		newItem, err := database.AddNewItem(item, db)
 		if err != nil {
 			log.Printf("Error adding item %d: %v", i+1, err)
