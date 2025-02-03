@@ -3,7 +3,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2>Item Details</h2>
-        <button @click="$emit('close')" class="button-base button-neutral">Close</button>
+        <button @click="handleClose" class="button-base button-neutral">Close</button>
       </div>
       <div class="modal-content">
         <div class="details-grid">
@@ -44,15 +44,25 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount } from 'vue'
 import type { Item } from '@/types/Item'
 
-defineProps<{
+const props = defineProps<{
   item: Item
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'close'): void
 }>()
+
+// Handle cleanup before component unmounts
+const handleClose = () => {
+  emit('close')
+}
+
+onBeforeUnmount(() => {
+  // Cleanup any listeners or connections here
+})
 
 const formatPrice = (price: number): string => {
   return new Intl.NumberFormat('de-DE', {
@@ -77,22 +87,23 @@ const getNullableString = (value: string | null | undefined): string => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 1000;
 }
 
 .modal {
-  background: var(--color-background);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
-  width: 90%;
+  width: 60%;
   max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  z-index: 1001;
 }
 
 .modal-header {
@@ -124,6 +135,7 @@ const getNullableString = (value: string | null | undefined): string => {
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   padding: 20px;
+  width: 100%;
 }
 
 .detail-item {
@@ -138,8 +150,18 @@ const getNullableString = (value: string | null | undefined): string => {
 }
 
 @media (max-width: 768px) {
+  .modal {
+    width: 90%;
+  }
+
   .details-grid {
     grid-template-columns: 1fr;
+  }
+
+  .modal-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
   }
 }
 </style>

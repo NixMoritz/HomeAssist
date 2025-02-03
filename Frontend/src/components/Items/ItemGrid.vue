@@ -11,8 +11,15 @@
       </button>
     </div>
 
-    <!-- Header with Add Button -->
+    <!-- Header with Search Bar and Add Button -->
     <div class="page-header">
+      <input
+        type="text"
+        v-model="searchTerm"
+        placeholder="Search items..."
+        class="search-bar"
+        aria-label="Search items"
+      />
       <button @click="openAddItemModal" class="button-base button-primary" :disabled="processing">
         Add Item
       </button>
@@ -23,7 +30,7 @@
       <!-- Items Grid -->
       <div class="items-grid" role="grid">
         <div
-          v-for="item in items"
+          v-for="item in filteredItems"
           :key="item.item_id"
           class="item-card"
           @click="showItemDetails(item)"
@@ -71,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import '@/components/styles/ButtonStyles.vue'
 import ItemModal from './ItemModal.vue'
 import ItemDetailsModal from './ItemDetailsModal.vue'
@@ -90,7 +97,24 @@ const showAddItemModal = ref(false)
 const showDetailsModal = ref(false)
 const selectedItem = ref<Item | null>(null)
 
-// Item templates
+// Search term for filtering items
+const searchTerm = ref('')
+
+// Computed property for filtered items based on the search term
+const filteredItems = computed(() => {
+  if (!searchTerm.value) {
+    return items.value
+  }
+  const term = searchTerm.value.toLowerCase()
+  return items.value.filter(
+    (item) =>
+      item.item_name.toLowerCase().includes(term) ||
+      (item.category && item.category.toLowerCase().includes(term)) ||
+      (item.brand_name && item.brand_name.toLowerCase().includes(term)),
+  )
+})
+
+// Item templates for new and edited items
 const editedItem = ref<Item>({
   item_id: 0,
   item_name: '',
@@ -113,7 +137,7 @@ const newItem = ref<Item>({
   updated_at: new Date().toISOString(),
 })
 
-// API calls with improved error handling
+// API calls for fetching, deleting, updating, and adding items
 const fetchItems = async () => {
   try {
     loading.value = true
@@ -143,14 +167,12 @@ const retryFetchItems = async (retries = 3) => {
 
 const deleteItem = async (itemId: number) => {
   if (!confirm('Are you sure you want to delete this item?')) return
-
   try {
     processing.value = true
     const response = await fetch(`${API_BASE}/items/delete?item_id=${itemId}`, {
       method: 'DELETE',
     })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
-
     items.value = items.value.filter((item) => item.item_id !== itemId)
   } catch (e) {
     error.value = 'Failed to delete item'
@@ -168,10 +190,8 @@ const saveEditedItem = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editedItem.value),
     })
-
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const updatedItem = await response.json()
-
     items.value = items.value.map((item) =>
       item.item_id === editedItem.value.item_id ? updatedItem : item,
     )
@@ -192,10 +212,8 @@ const addNewItem = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newItem.value),
     })
-
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const createdItem = await response.json()
-
     items.value.push(createdItem)
     showAddItemModal.value = false
   } catch (e) {
@@ -267,48 +285,68 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* General Container Styling */
 .items-container {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
   margin-top: 64px;
   box-sizing: border-box;
-  overflow-x: hidden;
-  position: relative;
-  margin-left: -50vw;
-  margin-right: -50vw;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 0 2rem;
 }
 
-/* Header */
 .page-header {
   width: 100%;
+  max-width: 1800px;
   margin: 0 auto 20px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   position: relative;
   z-index: 1;
 }
 
-/* Content Wrapper */
-.content-wrapper {
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 15%;
-  box-sizing: border-box;
+.search-bar {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
+  font-size: 1rem;
+  width: 250px;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 
-/* Grid Layout - now using flexbox */
+.search-bar:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.content-wrapper {
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
+}
+
 .items-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
   padding: 20px 0;
   width: 100%;
+  justify-content: flex-start;
 }
 
 .item-card {
-  flex: 1 1 calc(20% - 16px); /* 20% width for 5 items per row, accounting for gap */
-  min-width: 280px; /* Minimum width to prevent too small cards */
+  flex: 0 0 calc(20% - 16px);
+  min-width: 280px;
+  max-width: calc(20% - 16px);
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -381,28 +419,25 @@ onMounted(() => {
   color: #ef4444;
 }
 
-/* RESPONSIVE BREAKPOINTS */
-@media (max-width: 1400px) {
-  .item-card {
-    flex: 1 1 calc(25% - 15px); /* 4 items per row */
+/* Responsive design */
+@media (max-width: 768px) {
+  .items-container {
+    padding: 0 1rem;
   }
-}
 
-@media (max-width: 1200px) {
   .item-card {
-    flex: 1 1 calc(33.333% - 14px); /* 3 items per row */
+    flex: 0 0 100%;
+    max-width: 100%;
   }
-}
 
-@media (max-width: 900px) {
-  .item-card {
-    flex: 1 1 calc(50% - 10px); /* 2 items per row */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
   }
-}
 
-@media (max-width: 600px) {
-  .item-card {
-    flex: 1 1 100%; /* 1 item per row */
+  .search-bar {
+    width: 100%;
   }
 }
 </style>
