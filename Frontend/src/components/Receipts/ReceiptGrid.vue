@@ -23,11 +23,32 @@
       @openStoreSelect="openStoreSelection(showModal)"
     />
 
+    <ReceiptDetailsModal
+      v-if="showDetailsModal"
+      :receipt="selectedReceipt"
+      @close="showDetailsModal = false"
+    />
+
     <!-- Main Content -->
     <div class="content-wrapper">
+      <!-- Search Bar for Receipts -->
+      <div class="search-bar-wrapper">
+        <input
+          type="text"
+          v-model="searchTerm"
+          placeholder="Search receipts..."
+          class="search-input"
+        />
+      </div>
+
       <!-- Receipts Grid -->
       <div class="receipts-grid">
-        <div v-for="receipt in receipts" :key="receipt.receipt_id" class="receipt-card">
+        <div
+          v-for="receipt in filteredReceipts"
+          :key="receipt.receipt_id"
+          class="receipt-card"
+          @click="showReceiptDetails(receipt)"
+        >
           <div class="receipt-content">
             <h3 class="receipt-title">Receipt #{{ receipt.receipt_id }}</h3>
             <div class="receipt-details">
@@ -52,8 +73,8 @@
               <img :src="receipt.image_url" alt="Receipt Image" />
             </div>
             <div class="receipt-actions">
-              <button @click="editReceipt(receipt)" class="edit-button">Edit</button>
-              <button @click="deleteReceipt(receipt.receipt_id)" class="delete-button">
+              <button @click.stop="editReceipt(receipt)" class="edit-button">Edit</button>
+              <button @click.stop="deleteReceipt(receipt.receipt_id)" class="delete-button">
                 Delete
               </button>
             </div>
@@ -99,6 +120,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { toRaw } from 'vue'
 import ReceiptModal from './ReceiptModal.vue'
+import ReceiptDetailsModal from './ReceiptDetailsModal.vue'
 
 interface Receipt {
   receipt_id: number
@@ -137,6 +159,23 @@ const error = ref<string | null>(null)
 const showModal = ref(false)
 const showAddReceiptModal = ref(false)
 const stores = ref<Store[]>([])
+const selectedReceipt = ref<Receipt | null>(null)
+const showDetailsModal = ref(false)
+
+// New reactive search term for filtering receipts
+const searchTerm = ref('')
+
+// Computed property to filter receipts based on searchTerm
+const filteredReceipts = computed(() => {
+  if (!searchTerm.value) return receipts.value
+  const lowerSearch = searchTerm.value.toLowerCase()
+  return receipts.value.filter(
+    (receipt) =>
+      receipt.receipt_id.toString().includes(lowerSearch) ||
+      receipt.store_name.toLowerCase().includes(lowerSearch) ||
+      receipt.store_branch.toLowerCase().includes(lowerSearch),
+  )
+})
 
 const editedReceipt = ref<Receipt>({
   receipt_id: 0,
@@ -471,6 +510,11 @@ const selectStore = (store: Store) => {
   console.log('Updated receipt:', receipt)
 }
 
+const showReceiptDetails = (receipt: Receipt) => {
+  selectedReceipt.value = receipt
+  showDetailsModal.value = true
+}
+
 onMounted(async () => {
   console.log('Component mounted, loading data...')
   try {
@@ -535,26 +579,21 @@ onMounted(async () => {
 }
 
 .receipts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
   padding: 20px 0;
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .receipt-card {
+  flex: 1 1 calc(33.333% - 20px);
+  margin: 10px;
   background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.receipt-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .receipt-content {
@@ -562,8 +601,8 @@ onMounted(async () => {
 }
 
 .receipt-title {
-  margin: 0 0 16px 0;
-  font-size: 1.3rem;
+  margin: 0 0 16px;
+  font-size: clamp(1rem, 2vw, 1.2rem);
   color: var(--color-heading);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 12px;
