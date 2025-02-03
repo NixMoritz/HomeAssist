@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import ItemsView from '@/views/ItemsView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import ReceiptsView from '@/views/ReceiptsView.vue'
+import StoreGrid from '@/components/Stores/StoreGrid.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,6 +30,11 @@ const router = createRouter({
       path: '/items',
       name: 'items',
       component: ItemsView,
+    },
+    {
+      path: '/stores',
+      name: 'stores',
+      component: StoreGrid,
     },
     {
       path: '/receipts',
